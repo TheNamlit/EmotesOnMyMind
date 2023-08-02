@@ -1,0 +1,40 @@
+query MainFeedEmote(
+    $query: String!
+    $page: Int
+    $limit: Int
+    $sort: Sort
+    $formats: [ImageFormat!]
+    $filter: EmoteSearchFilter
+) {
+    emotes(
+        query: $query
+        page: $page
+        limit: $limit
+        sort: $sort
+        filter: $filter
+    ) {
+        count
+        items {
+            id
+            name
+            created_at
+            listed
+            personal_use
+            state
+            lifecycle
+            animated
+            host {
+                url
+                files(formats: $formats) {
+                    name
+                    width
+                    height
+                    size
+                    frame_count
+                    format
+                }
+            }
+        }
+        max_page
+    }
+}

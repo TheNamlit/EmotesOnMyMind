@@ -1,0 +1,31 @@
+query EmoteDetails($emoteId: ObjectID!, $formats: [ImageFormat!]) {
+    emote(id: $emoteId) {
+        id
+        name
+        created_at
+        listed
+        personal_use
+        state
+        animated
+        trending
+        lifecycle
+        host {
+            url
+            files(formats: $formats) {
+                name
+                width
+                height
+                size
+                frame_count
+                format
+            }
+        }
+        owner {
+            id
+            username
+            display_name
+            avatar_url
+        }
+        tags
+    }
+}

@@ -1,0 +1,54 @@
+<resources>
+    <string name="app_name">Emotes On My Mind</string>
+
+    <string name="error_unknown">Unknown Error</string>
+
+    <string name="bottom_navigation_main_feed">Emote Feed</string>
+    <string name="bottom_navigation_profile">Profile</string>
+    <string name="bottom_navigation_sticker_collections">Sticker Collections</string>
+
+    <string name="default_docked_search_bar_leading_icon_content_description">Search Icon</string>
+    <string name="default_docked_search_bar_trailing_icon_content_description">Close Icon</string>
+
+    <string name="main_feed_screen_top_app_bar_title_text">Emote Feed</string>
+    <string name="main_feed_screen_fab_icon_content_description">Search Icon</string>
+    <string name="main_feed_screen_search_bar_placeholder">Browse Emotes…</string>
+    <string name="main_feed_screen_search_bar_content_leading_icon_content_description">History Icon</string>
+    <string name="main_feed_screen_search_bar_content_reset_text">Reset</string>
+
+    <string name="emote_details_screen_top_app_bar_navigation_icon_content_description">Arrow Back Icon</string>
+
+    <string name="profile_screen_top_app_bar_title_text">Profile</string>
+
+    <string name="sticker_collections_screen_fab_icon_content_description">Add Icon</string>
+
+    <string name="sticker_details_screen_top_app_bar_navigation_icon_content_description">Arrow Back Icon</string>
+
+    <string name="sticker_collection_details_screen_top_app_bar_navigation_icon_content_description">Arrow Back Icon</string>
+
+    <string name="add_sticker_to_collection_alert_dialog_top_app_bar_navigation_icon_content_description">Close Icon</string>
+    <string name="emote_repository_failed_to_fetch_7tv_emote_details">Failed to fetch Emote Details from 7TV</string>
+    <string name="main_feed_emote_search_history_dao_insert_error">Failed to insert into Search History</string>
+    <string name="main_feed_emote_search_history_dao_delete_by_id_error">Failed to delete from Search History</string>
+    <string name="emote_repository_failed_to_get_main_feed_emote_search_history_item">Failed to fetch Search History Item</string>
+    <string name="device_storage_repository_could_not_delete_file">Could not delete File</string>
+    <string name="delete_sticker_alert_dialog_content_alert_dialog_title_text">Delete Sticker?</string>
+    <string name="delete_sticker_alert_dialog_content_alert_dialog_confirm_button_text">Delete</string>
+    <string name="delete_sticker_alert_dialog_content_alert_dialog_dismiss_button_text">Cancel</string>
+    <string name="delete_sticker_collection_alert_dialog_content_alert_dialog_title_text">Delete Sticker Collection?</string>
+    <string name="delete_sticker_collection_alert_dialog_content_alert_dialog_confirm_button_text">Delete</string>
+    <string name="delete_sticker_collection_alert_dialog_content_alert_dialog_dismiss_button_text">Cancel</string>
+    <string name="sticker_collection_repository_update_name_error">Failed to update Sticker Collection Name</string>
+    <string name="sticker_collection_dao_update_name_error">Failed to update Sticker Collection Name</string>
+    <string name="create_collection_use_case_invoke_sticker_collection_name_blank_error">Sticker Collection Name can not be blank.</string>
+    <string name="update_collection_name_use_case_invoke_sticker_collection_name_blank_error">Sticker Collection Name can not be blank.</string>
+    <string name="can_not_add_to_whats_app_info_alert_dialog_content_confirm_button_text">OK</string>
+    <string name="can_not_add_to_whats_app_info_alert_dialog_content_title_text">Can\'t add Sticker Collection to WhatsApp</string>
+    <string name="can_not_add_to_whats_app_info_alert_dialog_content_text">WhatsApp requires the Sticker–Collection to have between 3–30 Stickers.</string>
+    <string name="default_coil_image_content_description">Coil Image</string>
+    <string name="default_coil_local_image_content_description">Coil Image</string>
+    <string name="validate_collection_for_whats_app_use_case_validate_file_sizes_error">The File Size of one Sticker doesn\'t seem to be correct.</string>
+    <string name="validate_collection_for_whats_app_use_case_validate_file_dimensions_error">The File Dimensions of one Sticker doesn\'t seem to be correct.</string>
+    <string name="validate_collection_for_whats_app_use_case_validate_sticker_amount_error">WhatsApp requires the Sticker–Collection to have between 3–30 Stickers.</string>
+    <string name="check_for_whats_app_installation_use_case_error">It seems like WhatsApp is not installed on your device.</string>
+</resources>

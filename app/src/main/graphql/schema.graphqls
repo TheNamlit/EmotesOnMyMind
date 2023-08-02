@@ -1,0 +1,1169 @@
+type ActiveEmote {
+  id: ObjectID!
+
+  name: String!
+
+  flags: Int!
+
+  timestamp: Time!
+
+  data: EmotePartial!
+
+  actor: UserPartial
+
+  origin_id: ObjectID
+}
+
+scalar ArbitraryMap
+
+type Archive {
+  name: String!
+
+  content_type: String!
+
+  url: String!
+
+  size: Int!
+}
+
+type AuditLog {
+  id: ObjectID!
+
+  actor: UserPartial!
+
+  actor_id: ObjectID!
+
+  kind: Int!
+
+  target_id: ObjectID!
+
+  target_kind: Int!
+
+  created_at: Time!
+
+  changes: [AuditLogChange!]!
+
+  reason: String!
+}
+
+type AuditLogChange {
+  format: Int!
+
+  key: String!
+
+  value: ArbitraryMap
+
+  array_value: AuditLogChangeArray
+}
+
+type AuditLogChangeArray {
+  added: [ArbitraryMap]!
+
+  removed: [ArbitraryMap]!
+
+  updated: [ArbitraryMap]!
+}
+
+type Ban {
+  id: ObjectID!
+
+  reason: String!
+
+  effects: Int!
+
+  expire_at: Time!
+
+  created_at: Time!
+
+  victim_id: ObjectID!
+
+  victim: User
+
+  actor_id: ObjectID!
+
+  actor: User
+}
+
+"""
+The `Boolean` scalar type represents `true` or `false`.
+"""
+scalar Boolean
+
+type ChangeField {
+  key: String!
+
+  index: Int
+
+  nested: Boolean!
+
+  type: String!
+
+  old_value: String
+
+  value: String
+}
+
+type ChangeMap {
+  id: ObjectID!
+
+  kind: ObjectKind!
+
+  actor: User
+
+  added: [ChangeField!]!
+
+  updated: [ChangeField!]!
+
+  removed: [ChangeField!]!
+
+  pushed: [ChangeField!]!
+
+  pulled: [ChangeField!]!
+}
+
+enum ChannelEmoteListItemAction {
+  ADD
+
+  UPDATE
+
+  REMOVE
+}
+
+enum ConnectionPlatform {
+  TWITCH
+
+  YOUTUBE
+
+  DISCORD
+
+  KICK
+}
+
+interface Cosmetic {
+  id: ObjectID!
+
+  kind: CosmeticKind!
+
+  name: String!
+}
+
+type CosmeticBadge implements Cosmetic {
+  id: ObjectID!
+
+  kind: CosmeticKind!
+
+  name: String!
+
+  tooltip: String!
+
+  tag: String!
+
+  host: ImageHost!
+}
+
+enum CosmeticKind {
+  BADGE
+
+  PAINT
+}
+
+type CosmeticOps {
+  id: ObjectID!
+
+  updatePaint(definition: CosmeticPaintInput!): CosmeticPaint!
+}
+
+type CosmeticPaint implements Cosmetic {
+  id: ObjectID!
+
+  kind: CosmeticKind!
+
+  name: String!
+
+  function: CosmeticPaintFunction! @deprecated(reason: "use the 'gradients' property")
+
+  color: Int
+
+  gradients: [CosmeticPaintGradient!]!
+
+  shadows: [CosmeticPaintShadow!]
+
+  flairs: [CosmeticPaintFlair!]
+
+  text: CosmeticPaintText
+
+  angle: Int! @deprecated(reason: "use the 'gradients' property")
+
+  shape: String @deprecated(reason: "use the 'gradients' property")
+
+  image_url: String @deprecated(reason: "use the 'gradients' property")
+
+  repeat: Boolean! @deprecated(reason: "use the 'gradients' property")
+
+  stops: [CosmeticPaintStop!]! @deprecated(reason: "use the 'gradients' property")
+}
+
+type CosmeticPaintFlair {
+  kind: CosmeticPaintFlairKind!
+
+  x_offset: Float!
+
+  y_offset: Float!
+
+  width: Float!
+
+  height: Float!
+
+  data: String!
+}
+
+enum CosmeticPaintFlairKind {
+  IMAGE
+
+  VECTOR
+
+  TEXT
+}
+
+enum CosmeticPaintFunction {
+  LINEAR_GRADIENT
+
+  RADIAL_GRADIENT
+
+  URL
+}
+
+type CosmeticPaintGradient {
+  function: CosmeticPaintFunction!
+
+  canvas_repeat: String!
+
+  size: [Float!]
+
+  at: [Float!]
+
+  stops: [CosmeticPaintStop!]!
+
+  angle: Int!
+
+  repeat: Boolean!
+
+  image_url: String
+
+  shape: String
+}
+
+input CosmeticPaintInput {
+  name: String!
+
+  function: CosmeticPaintFunction!
+
+  color: Int
+
+  angle: Int
+
+  shape: String
+
+  image_url: String
+
+  repeat: Boolean!
+
+  stops: [CosmeticPaintStopInput!]!
+
+  shadows: [CosmeticPaintShadowInput!]!
+}
+
+type CosmeticPaintShadow {
+  x_offset: Float!
+
+  y_offset: Float!
+
+  radius: Float!
+
+  color: Int!
+}
+
+input CosmeticPaintShadowInput {
+  x_offset: Float!
+
+  y_offset: Float!
+
+  radius: Float!
+
+  color: Int!
+}
+
+type CosmeticPaintStop {
+  at: Float!
+
+  color: Int!
+
+  center_at: [Float!]
+}
+
+input CosmeticPaintStopInput {
+  at: Float!
+
+  color: Int!
+}
+
+type CosmeticPaintStroke {
+  color: Int!
+
+  width: Float!
+}
+
+type CosmeticPaintText {
+  weight: Int
+
+  shadows: [CosmeticPaintShadow!]
+
+  transform: String
+
+  stroke: CosmeticPaintStroke
+
+  variant: String
+}
+
+type CosmeticsQuery {
+  paints: [CosmeticPaint!]!
+
+  badges: [CosmeticBadge!]!
+}
+
+input CreateEmoteSetInput {
+  name: String!
+
+  privileged: Boolean
+}
+
+input CreateReportInput {
+  target_kind: Int!
+
+  target_id: ObjectID!
+
+  subject: String!
+
+  body: String!
+}
+
+input CreateRoleInput {
+  name: String!
+
+  color: Int!
+
+  allowed: String!
+
+  denied: String!
+}
+
+input EditReportInput {
+  priority: Int
+
+  status: ReportStatus
+
+  assignee: String
+
+  note: EditReportNoteInput
+}
+
+input EditReportNoteInput {
+  timestamp: String
+
+  content: String
+
+  internal: Boolean
+
+  reply: String
+}
+
+input EditRoleInput {
+  name: String
+
+  color: Int
+
+  allowed: String
+
+  denied: String
+
+  position: Int
+}
+
+type Emote {
+  id: ObjectID!
+
+  name: String!
+
+  flags: Int!
+
+  lifecycle: Int!
+
+  tags: [String!]!
+
+  animated: Boolean!
+
+  created_at: Time!
+
+  owner_id: ObjectID!
+
+  owner: UserPartial
+
+  channels(page: Int, limit: Int): UserSearchResult!
+
+  common_names: [EmoteCommonName!]!
+
+  trending: Int
+
+  host: ImageHost!
+
+  versions: [EmoteVersion!]!
+
+  activity(limit: Int): [AuditLog!]!
+
+  state: [EmoteVersionState!]!
+
+  listed: Boolean!
+
+  personal_use: Boolean!
+
+  reports: [Report!]!
+}
+
+type EmoteCommonName {
+  name: String!
+
+  count: Int!
+}
+
+type EmoteOps {
+  id: ObjectID!
+
+  update(params: EmoteUpdate!, reason: String): Emote!
+
+  merge(target_id: ObjectID!, reason: String): Emote!
+
+  rerun: Emote
+}
+
+type EmotePartial {
+  id: ObjectID!
+
+  name: String!
+
+  flags: Int!
+
+  lifecycle: Int!
+
+  tags: [String!]!
+
+  animated: Boolean!
+
+  created_at: Time!
+
+  owner_id: ObjectID!
+
+  owner: UserPartial
+
+  host: ImageHost!
+
+  state: [EmoteVersionState!]!
+
+  listed: Boolean!
+}
+
+enum EmoteSearchCategory {
+  TOP
+
+  TRENDING_DAY
+
+  TRENDING_WEEK
+
+  TRENDING_MONTH
+
+  FEATURED
+
+  NEW
+
+  GLOBAL
+}
+
+input EmoteSearchFilter {
+  category: EmoteSearchCategory
+
+  case_sensitive: Boolean
+
+  exact_match: Boolean
+
+  ignore_tags: Boolean
+
+  animated: Boolean
+
+  zero_width: Boolean
+
+  authentic: Boolean
+
+  aspect_ratio: String
+
+  personal_use: Boolean
+}
+
+type EmoteSearchResult {
+  count: Int!
+
+  max_page: Int!
+
+  items: [Emote]!
+}
+
+type EmoteSet {
+  id: ObjectID!
+
+  name: String!
+
+  flags: Int!
+
+  tags: [String!]!
+
+  emotes(limit: Int, origins: Boolean): [ActiveEmote!]!
+
+  emote_count: Int!
+
+  capacity: Int!
+
+  origins: [EmoteSetOrigin!]!
+
+  owner_id: ObjectID
+
+  owner: UserPartial
+}
+
+enum EmoteSetName {
+  GLOBAL
+}
+
+type EmoteSetOps {
+  id: ObjectID!
+
+  emotes(id: ObjectID!, action: ListItemAction!, name: String): [ActiveEmote!]!
+
+  update(data: UpdateEmoteSetInput!): EmoteSet!
+
+  delete: Boolean!
+}
+
+type EmoteSetOrigin {
+  id: ObjectID!
+
+  weight: Int!
+
+  slices: [Int!]
+}
+
+input EmoteSetOriginInput {
+  id: ObjectID!
+
+  weight: Int!
+
+  slices: [Int!]
+}
+
+type EmoteSetPartial {
+  id: ObjectID!
+
+  name: String!
+
+  capacity: Int!
+}
+
+input EmoteUpdate {
+  name: String
+
+  version_name: String
+
+  version_description: String
+
+  flags: Int
+
+  owner_id: ObjectID
+
+  tags: [String!]
+
+  listed: Boolean
+
+  personal_use: Boolean
+
+  deleted: Boolean
+}
+
+type EmoteVersion {
+  id: ObjectID!
+
+  name: String!
+
+  description: String!
+
+  created_at: Time!
+
+  host: ImageHost!
+
+  lifecycle: Int!
+
+  error: String
+
+  state: [EmoteVersionState!]!
+
+  listed: Boolean!
+}
+
+enum EmoteVersionState {
+  LISTED
+
+  ALLOW_PERSONAL
+}
+
+"""
+The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point).
+"""
+scalar Float
+
+"""
+The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as "4") or integer (such as 4) input value will be accepted as an ID.
+"""
+scalar ID
+
+type Image {
+  name: String!
+
+  format: ImageFormat!
+
+  width: Int!
+
+  height: Int!
+
+  frame_count: Int!
+
+  size: Int!
+}
+
+enum ImageFormat {
+  AVIF
+
+  WEBP
+
+  GIF
+
+  PNG
+}
+
+type ImageHost {
+  url: String!
+
+  files(formats: [ImageFormat!]): [Image!]!
+}
+
+type InboxMessage implements Message {
+  id: ObjectID!
+
+  kind: MessageKind!
+
+  created_at: Time!
+
+  author_id: ObjectID
+
+  read: Boolean!
+
+  read_at: Time
+
+  subject: String!
+
+  content: String!
+
+  important: Boolean!
+
+  starred: Boolean!
+
+  pinned: Boolean!
+
+  placeholders: StringMap!
+}
+
+"""
+The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+"""
+scalar Int
+
+enum ListItemAction {
+  ADD
+
+  UPDATE
+
+  REMOVE
+}
+
+interface Message {
+  id: ObjectID!
+
+  kind: MessageKind!
+
+  created_at: Time!
+
+  author_id: ObjectID
+
+  read: Boolean!
+
+  read_at: Time
+}
+
+enum MessageKind {
+  EMOTE_COMMENT
+
+  MOD_REQUEST
+
+  INBOX
+
+  NEWS
+}
+
+type ModRequestMessage implements Message {
+  id: ObjectID!
+
+  kind: MessageKind!
+
+  created_at: Time!
+
+  author_id: ObjectID
+
+  read: Boolean!
+
+  read_at: Time
+
+  target_kind: Int!
+
+  target_id: ObjectID!
+
+  wish: String!
+
+  actor_country_name: String!
+
+  actor_country_code: String!
+}
+
+type ModRequestMessageList {
+  messages: [ModRequestMessage!]!
+
+  total: Int!
+}
+
+type Mutation {
+  createBan(victim_id: ObjectID!, reason: String!, effects: Int!, expire_at: Time, anonymous: Boolean): Ban
+
+  editBan(ban_id: ObjectID!, reason: String, effects: Int, expire_at: String): Ban
+
+  createCosmeticPaint(definition: CosmeticPaintInput!): ObjectID!
+
+  cosmetics(id: ObjectID!): CosmeticOps!
+
+  emote(id: ObjectID!): EmoteOps!
+
+  emoteSet(id: ObjectID!): EmoteSetOps
+
+  createEmoteSet(user_id: ObjectID!, data: CreateEmoteSetInput!): EmoteSet
+
+  readMessages(message_ids: [ObjectID!]!, read: Boolean!): Int!
+
+  sendInboxMessage(recipients: [ObjectID!]!, subject: String!, content: String!, important: Boolean, anonymous: Boolean): InboxMessage
+
+  dismissVoidTargetModRequests(object: Int!): Int!
+
+  createReport(data: CreateReportInput!): Report
+
+  editReport(report_id: ObjectID!, data: EditReportInput!): Report
+
+  createRole(data: CreateRoleInput!): Role
+
+  editRole(role_id: ObjectID!, data: EditRoleInput!): Role
+
+  deleteRole(role_id: ObjectID!): String!
+
+  user(id: ObjectID!): UserOps
+}
+
+scalar ObjectID
+
+enum ObjectKind {
+  USER
+
+  EMOTE
+
+  EMOTE_SET
+
+  ROLE
+
+  ENTITLEMENT
+
+  BAN
+
+  MESSAGE
+
+  REPORT
+}
+
+enum Permission {
+  CREATE_EMOTE
+
+  EDIT_EMOTE
+
+  CREATE_EMOTE_SET
+
+  EDIT_EMOTE_SET
+
+  CREATE_REPORT
+
+  SEND_MESSAGES
+
+  FEATURE_ZEROWIDTH_EMOTE_TYPE
+
+  FEATURE_PROFILE_PICTURE_ANIMATION
+
+  MANAGE_BANS
+
+  MANAGE_ROLES
+
+  MANAGE_REPORTS
+
+  MANAGE_USERS
+
+  EDIT_ANY_EMOTE
+
+  EDIT_ANY_EMOTE_SET
+
+  BYPASS_PRIVACY
+
+  SUPER_ADMINISTRATOR
+
+  MANAGE_CONTENT
+
+  MANAGE_STACK
+
+  MANAGE_COSMETICS
+}
+
+type Query {
+  proxied_endpoint(id: Int!, user_id: ObjectID): String!
+
+  cosmetics(list: [ObjectID!]): CosmeticsQuery!
+
+  emote(id: ObjectID!): Emote
+
+  emotesByID(list: [ObjectID!]!): [EmotePartial!]!
+
+  emotes(query: String!, page: Int, limit: Int, filter: EmoteSearchFilter, sort: Sort): EmoteSearchResult!
+
+  emoteSet(id: ObjectID!): EmoteSet!
+
+  emoteSetsByID(list: [ObjectID!]!): [EmoteSet!]!
+
+  namedEmoteSet(name: EmoteSetName!): EmoteSet!
+
+  announcement: String!
+
+  inbox(user_id: ObjectID!, after_id: ObjectID, limit: Int): [InboxMessage!]!
+
+  modRequests(after_id: ObjectID, limit: Int, wish: String, country: String): ModRequestMessageList!
+
+  reports(status: ReportStatus, limit: Int, after_id: ObjectID, before_id: ObjectID): [Report]!
+
+  report(id: ObjectID!): Report
+
+  roles: [Role]!
+
+  role(id: ObjectID!): Role
+
+  actor: User
+
+  user(id: ObjectID!): User!
+
+  userByConnection(platform: ConnectionPlatform!, id: String!): User!
+
+  users(query: String!, page: Int, limit: Int): [UserPartial!]!
+
+  usersByID(list: [ObjectID!]!): [UserPartial!]!
+}
+
+type Report {
+  id: ObjectID!
+
+  target_kind: Int!
+
+  target_id: ObjectID!
+
+  actor_id: ObjectID!
+
+  actor: User!
+
+  subject: String!
+
+  body: String!
+
+  priority: Int!
+
+  status: ReportStatus!
+
+  created_at: Time!
+
+  notes: [String!]!
+
+  assignees: [User!]!
+}
+
+enum ReportStatus {
+  OPEN
+
+  ASSIGNED
+
+  CLOSED
+}
+
+type Role {
+  id: ObjectID!
+
+  name: String!
+
+  color: Int!
+
+  allowed: String!
+
+  denied: String!
+
+  position: Int!
+
+  created_at: Time!
+
+  invisible: Boolean!
+
+  members(page: Int, limit: Int): [User!]!
+}
+
+input Sort {
+  value: String!
+
+  order: SortOrder!
+}
+
+enum SortOrder {
+  ASCENDING
+
+  DESCENDING
+}
+
+"""
+The `String`scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+"""
+scalar String
+
+scalar StringMap
+
+scalar Time
+
+input UpdateEmoteSetInput {
+  name: String
+
+  capacity: Int
+
+  origins: [EmoteSetOriginInput!]
+}
+
+type User {
+  id: ObjectID!
+
+  type: String!
+
+  username: String!
+
+  display_name: String!
+
+  created_at: Time!
+
+  avatar_url: String!
+
+  biography: String!
+
+  style: UserStyle!
+
+  editors: [UserEditor!]!
+
+  editor_of: [UserEditor!]!
+
+  cosmetics: [UserCosmetic!]!
+
+  roles: [ObjectID!]!
+
+  emote_sets: [EmoteSet!]!
+
+  owned_emotes: [Emote!]!
+
+  activity(limit: Int): [AuditLog!]!
+
+  connections(type: [ConnectionPlatform!]): [UserConnection]!
+
+  inbox_unread_count: Int!
+
+  reports: [Report!]!
+}
+
+type UserConnection {
+  id: String!
+
+  platform: ConnectionPlatform!
+
+  username: String!
+
+  display_name: String!
+
+  linked_at: Time!
+
+  emote_capacity: Int!
+
+  emote_set_id: ObjectID
+}
+
+type UserConnectionPartial {
+  id: String!
+
+  platform: ConnectionPlatform!
+
+  username: String!
+
+  display_name: String!
+
+  linked_at: Time!
+
+  emote_capacity: Int!
+
+  emote_set_id: ObjectID
+}
+
+input UserConnectionUpdate {
+  emote_set_id: ObjectID
+
+  unlink: Boolean
+}
+
+type UserCosmetic {
+  id: ObjectID!
+
+  selected: Boolean!
+
+  kind: CosmeticKind!
+}
+
+input UserCosmeticUpdate {
+  id: ObjectID!
+
+  kind: CosmeticKind!
+
+  selected: Boolean!
+}
+
+type UserEditor {
+  id: ObjectID!
+
+  user: UserPartial!
+
+  permissions: Int!
+
+  visible: Boolean!
+
+  added_at: Time!
+}
+
+input UserEditorUpdate {
+  permissions: Int
+
+  visible: Boolean
+}
+
+type UserOps {
+  id: ObjectID!
+
+  connections(id: String!, data: UserConnectionUpdate!): [UserConnection]
+
+  editors(editor_id: ObjectID!, data: UserEditorUpdate!): [UserEditor]
+
+  cosmetics(update: UserCosmeticUpdate!): Boolean
+
+  roles(role_id: ObjectID!, action: ListItemAction!): [ObjectID!]!
+}
+
+type UserPartial {
+  id: ObjectID!
+
+  type: String!
+
+  username: String!
+
+  display_name: String!
+
+  created_at: Time!
+
+  avatar_url: String!
+
+  biography: String!
+
+  style: UserStyle!
+
+  roles: [ObjectID!]!
+
+  connections(type: [ConnectionPlatform!]): [UserConnectionPartial!]!
+
+  emote_sets: [EmoteSetPartial!]!
+}
+
+type UserSearchResult {
+  total: Int!
+
+  items: [UserPartial!]!
+}
+
+type UserStyle {
+  color: Int!
+
+  paint_id: ObjectID
+
+  paint: CosmeticPaint
+
+  badge_id: ObjectID
+
+  badge: CosmeticBadge
+}
+
+"""
+The @deprecated built-in directive is used within the type system definition language to indicate deprecated portions of a GraphQL service's schema, such as deprecated fields on a type, arguments on a field, input fields on an input type, or values of an enum type.
+"""
+directive @deprecated (reason: String = "No longer supported") on FIELD_DEFINITION|ARGUMENT_DEFINITION|INPUT_FIELD_DEFINITION|ENUM_VALUE
+
+directive @goField (forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION|FIELD_DEFINITION
+
+directive @hasPermissions (role: [Permission!]) on FIELD_DEFINITION|INPUT_FIELD_DEFINITION
+
+"""
+The @include directive may be provided for fields, fragment spreads, and inline fragments, and allows for conditional inclusion during execution as described by the if argument.
+"""
+directive @include (if: Boolean!) on FIELD|FRAGMENT_SPREAD|INLINE_FRAGMENT
+
+directive @internal on FIELD_DEFINITION
+
+"""
+The @skip directive may be provided for fields, fragment spreads, and inline fragments, and allows for conditional exclusion during execution as described by the if argument.
+"""
+directive @skip (if: Boolean!) on FIELD|FRAGMENT_SPREAD|INLINE_FRAGMENT
+
+"""
+The @specifiedBy built-in directive is used within the type system definition language to provide a scalar specification URL for specifying the behavior of custom scalar types.
+"""
+directive @specifiedBy (url: String!) on SCALAR
+
+schema {
+  query: Query
+  mutation: Mutation
+}
