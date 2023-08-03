@@ -3,13 +3,17 @@ package com.thenamlit.emotesonmymind.features.sticker.presentation.util.alert_di
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Divider
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil.ImageLoader
@@ -39,21 +43,39 @@ fun SelectStickerToAddToCollectionAlertDialogContent(
     )
 
     Column(modifier = modifier) {
-        DisplaySelectedStickerGrid(
-            imageLoader = imageLoader,
-            selectedStickerList = selectedStickerList,
-            onSelectedStickerClicked = onSelectedStickerClicked,
-            stickerImageFile = stickerImageFile
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.4f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            Text(text = "Selected to add to collection")
+
+            DisplaySelectedStickerGrid(
+                imageLoader = imageLoader,
+                selectedStickerList = selectedStickerList,
+                onSelectedStickerClicked = onSelectedStickerClicked,
+                stickerImageFile = stickerImageFile
+            )
+        }
 
         Divider()
 
-        DisplayNotSelectedStickerGrid(
-            imageLoader = imageLoader,
-            notSelectedStickerList = notSelectedStickerList,
-            onNotSelectedStickerClicked = onNotSelectedStickerClicked,
-            stickerImageFile = stickerImageFile
-        )
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            Text(text = "All not included in collection")
+
+            DisplayNotSelectedStickerGrid(
+                imageLoader = imageLoader,
+                notSelectedStickerList = notSelectedStickerList,
+                onNotSelectedStickerClicked = onNotSelectedStickerClicked,
+                stickerImageFile = stickerImageFile
+            )
+        }
     }
 }
 
