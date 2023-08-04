@@ -16,7 +16,6 @@
 
 ### Missing / Next up
 
-- Let user filter for Animated, Not Animated (including none and all) in MainFeedScreen.
 - Show more data on StickerDetailsScreen and EmoteDetailsScreen.
 - Compress and scale animated WEBP-Files, so they can be used as WhatsApp-Sticker. This requires
   taking apart every single frame of the WEBP-File and putting it back together after compressing
@@ -31,6 +30,7 @@
 
 - Browse Emotes on a LazyGrid using pagination to continuously load new Emotes.
 - Search for Emotes in SearchBar with locally cached Search-History.
+- Filter for Animated, Not Animated (including none and all).
 - Clicking on an Emote-Item will bring the user to the either to the StickerDetailsScreen (if
   Sticker has already been downloaded) or the EmoteDetailsScreen (if it hasn't been downloaded yet).
 
