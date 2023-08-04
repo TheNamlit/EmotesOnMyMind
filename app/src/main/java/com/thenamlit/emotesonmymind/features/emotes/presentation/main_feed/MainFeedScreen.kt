@@ -90,14 +90,15 @@ fun MainFeedScreen(
             checkForLoadNextEmotes = { index: Int ->
                 // https://www.youtube.com/watch?v=D6Eus3f6U9I
                 // Checking if at last Emote - 1 to load next ones
-                if (index >= mainFeedState.emotes.size - 1 &&
+                if (index >= mainFeedState.displayedEmotes.size - 1 &&
                     !mainFeedState.endReached &&
                     !mainFeedState.isLoading
                 ) {
                     viewModel.loadNextEmotes()
                 }
             },
-            isLoading = mainFeedState.isLoading
+            isLoading = mainFeedState.isLoading,
+            filterChipItems = mainFeedState.filterChipItems
         )
     }
 }

@@ -26,6 +26,8 @@ data class MainFeedState(
     val error: String? = null,
     val endReached: Boolean = false,
 
+    val filterChipItems: List<MainFeedScreenStateFilterChipItem> = emptyList(),
+
     // TODO: Outsource to Variable | Doesn't work in landscape
     val searchBarHeight: Float = 0.08f,
     val searchedQuery: String = "",
@@ -34,6 +36,19 @@ data class MainFeedState(
 
     val count: Int = 0,
     val emotes: List<MainFeedEmote> = emptyList(),
+    val displayedEmotes: List<MainFeedEmote> = emptyList(),
 
     val searchHistory: List<MainFeedEmoteSearchHistoryItem> = emptyList(),
 )
+
+data class MainFeedScreenStateFilterChipItem(
+    val selected: Boolean,
+    val onClick: (MainFeedScreenStateFilterChipItem) -> Unit,
+    val type: MainFeedScreenStateFilterChipItemType,
+)
+
+// TODO: Use StringResources instead of hardcoded String
+sealed class MainFeedScreenStateFilterChipItemType(val label: String) {
+    object Animated : MainFeedScreenStateFilterChipItemType(label = "Animated")
+    object NotAnimated : MainFeedScreenStateFilterChipItemType(label = "Not Animated")
+}

@@ -72,12 +72,15 @@ class MainFeedScreenViewModel @Inject constructor(
                 page = newKey,
                 endReached = items.isEmpty()
             )
+
+            filterAndAddToDisplayedEmotes(mainFeedEmotes = items)
         }
     )
 
     init {
         Log.d(tag, "init")
 
+        initializeFilterChipItems()
         searchEmotes()
         loadNextEmotes()
     }
@@ -86,6 +89,130 @@ class MainFeedScreenViewModel @Inject constructor(
         Log.d(tag, "getImageLoader")
 
         return imageLoader
+    }
+
+    private fun initializeFilterChipItems() {
+        Log.d(tag, "initializeFilterChipItems")
+
+        val filterChipItems = listOf(
+            MainFeedScreenStateFilterChipItem(
+                type = MainFeedScreenStateFilterChipItemType.Animated,
+                selected = true,
+                onClick = { filterChipItem: MainFeedScreenStateFilterChipItem ->
+                    toggleMainFeedScreenStateFilterChipItemActive(filterChipItem = filterChipItem)
+                }
+            ),
+            MainFeedScreenStateFilterChipItem(
+                type = MainFeedScreenStateFilterChipItemType.NotAnimated,
+                selected = true,
+                onClick = { filterChipItem: MainFeedScreenStateFilterChipItem ->
+                    toggleMainFeedScreenStateFilterChipItemActive(filterChipItem = filterChipItem)
+                }
+            ),
+        )
+
+        _mainFeedStateFlow.value = mainFeedStateFlow.value.copy(
+            filterChipItems = filterChipItems,
+        )
+    }
+
+    private fun toggleMainFeedScreenStateFilterChipItemActive(
+        filterChipItem: MainFeedScreenStateFilterChipItem,
+    ) {
+        Log.d(
+            tag,
+            "toggleLibraryScreenStateFilterChipItemActive | filterChipItem: $filterChipItem"
+        )
+
+        _mainFeedStateFlow.value = mainFeedStateFlow.value.copy(
+            filterChipItems = _mainFeedStateFlow.value.filterChipItems.map {
+                if (it == filterChipItem) {
+                    MainFeedScreenStateFilterChipItem(
+                        type = it.type,
+                        selected = !it.selected,
+                        onClick = it.onClick
+                    )
+                } else {
+                    it
+                }
+            },
+        )
+
+        filterMainFeedEmotes()
+    }
+
+    private fun filterMainFeedEmotes() {
+        Log.d(tag, "filterMainFeedEmotes")
+
+        val filterChipItems = _mainFeedStateFlow.value.filterChipItems
+        var showAnimated = false
+        var showNotAnimated = false
+
+        filterChipItems.forEach { mainFeedScreenStateFilterChipItem: MainFeedScreenStateFilterChipItem ->
+            when (mainFeedScreenStateFilterChipItem.type) {
+                is MainFeedScreenStateFilterChipItemType.Animated -> {
+                    if (mainFeedScreenStateFilterChipItem.selected) {
+                        showAnimated = true
+                    }
+                }
+
+                is MainFeedScreenStateFilterChipItemType.NotAnimated -> {
+                    if (mainFeedScreenStateFilterChipItem.selected) {
+                        showNotAnimated = true
+                    }
+                }
+            }
+        }
+
+        setDisplayedEmotes(
+            mainFeedEmotes = _mainFeedStateFlow.value.emotes.filter { mainFeedEmote: MainFeedEmote ->
+                (mainFeedEmote.animated && showAnimated) ||
+                        (!mainFeedEmote.animated && showNotAnimated)
+            }
+        )
+    }
+
+    private fun setDisplayedEmotes(mainFeedEmotes: List<MainFeedEmote>) {
+        Log.d(tag, "setDisplayedEmotes | mainFeedEmotes: $mainFeedEmotes")
+
+        _mainFeedStateFlow.value = mainFeedStateFlow.value.copy(
+            displayedEmotes = mainFeedEmotes
+        )
+    }
+
+    private fun filterAndAddToDisplayedEmotes(mainFeedEmotes: List<MainFeedEmote>) {
+        Log.d(tag, "filterAndAddToDisplayedEmotes | mainFeedEmotes: $mainFeedEmotes")
+
+        val filterChipItems = _mainFeedStateFlow.value.filterChipItems
+        var showAnimated = false
+        var showNotAnimated = false
+
+        filterChipItems.forEach { mainFeedScreenStateFilterChipItem: MainFeedScreenStateFilterChipItem ->
+            when (mainFeedScreenStateFilterChipItem.type) {
+                is MainFeedScreenStateFilterChipItemType.Animated -> {
+                    if (mainFeedScreenStateFilterChipItem.selected) {
+                        showAnimated = true
+                    }
+                }
+
+                is MainFeedScreenStateFilterChipItemType.NotAnimated -> {
+                    if (mainFeedScreenStateFilterChipItem.selected) {
+                        showNotAnimated = true
+                    }
+                }
+            }
+        }
+
+        mainFeedEmotes.forEach { mainFeedEmote: MainFeedEmote ->
+            if (
+                (mainFeedEmote.animated && showAnimated) ||
+                (!mainFeedEmote.animated && showNotAnimated)
+            ) {
+                _mainFeedStateFlow.value = mainFeedStateFlow.value.copy(
+                    displayedEmotes = _mainFeedStateFlow.value.displayedEmotes + mainFeedEmote
+                )
+            }
+        }
     }
 
     fun navigateToDetails(mainFeedEmote: MainFeedEmote) {
@@ -211,6 +338,7 @@ class MainFeedScreenViewModel @Inject constructor(
         addToSearchHistory(searchQuery = searchQuery)
         setSearchedQuery(searchedQuery = searchQuery)
         setEmotes(emotes = emptyList())
+        setDisplayedEmotes(mainFeedEmotes = emptyList())
         setPage(page = 1)
         loadNextEmotes()
     }

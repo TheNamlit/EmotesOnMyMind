@@ -9,9 +9,14 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,11 +33,13 @@ import com.thenamlit.emotesonmymind.features.emotes.domain.models.MainFeedEmote
 
 private const val tag = "${Logging.loggingPrefix}MainFeedScreenContent"
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainFeedScreenContent(
     modifier: Modifier,
     mainFeedState: MainFeedState,
     imageLoader: ImageLoader,
+    filterChipItems: List<MainFeedScreenStateFilterChipItem>,
     onSearchActiveChanged: (Boolean) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
@@ -66,17 +73,30 @@ fun MainFeedScreenContent(
             onSearchBarCloseIconClicked = onSearchBarCloseIconClicked,
         )
 
+        LazyRow(
+            modifier = Modifier.padding(start = 4.dp, end = 4.dp)
+        ) {
+            items(filterChipItems) { filterChipItem: MainFeedScreenStateFilterChipItem ->
+                FilterChip(
+                    modifier = Modifier.padding(4.dp),
+                    selected = filterChipItem.selected,
+                    onClick = { filterChipItem.onClick(filterChipItem) },
+                    label = { Text(text = filterChipItem.type.label) }
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.padding(top = 20.dp))
 
         EmoteGrid(
             modifier = Modifier.fillMaxSize(),
-            mainFeedEmotes = mainFeedState.emotes,
+            mainFeedEmotes = mainFeedState.displayedEmotes,
             imageLoader = imageLoader,
             onEmoteClicked = { mainFeedEmote: MainFeedEmote ->
                 onEmoteClicked(mainFeedEmote)
             },
             checkForLoadNextEmotes = checkForLoadNextEmotes,
-            isLoading = isLoading
+            isLoading = isLoading,
         )
     }
 }
