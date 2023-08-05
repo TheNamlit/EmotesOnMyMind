@@ -19,7 +19,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.spec.Direction
-import com.thenamlit.emotesonmymind.core.presentation.util.UiEvent
+import com.thenamlit.emotesonmymind.core.presentation.util.NavigationEvent
 import com.thenamlit.emotesonmymind.core.util.Logging
 import kotlinx.coroutines.flow.SharedFlow
 
@@ -52,7 +52,7 @@ fun SplashScreen(
 
 @Composable
 private fun CollectSplashScreenEvents(
-    splashScreenEventFlow: SharedFlow<UiEvent>,
+    splashScreenEventFlow: SharedFlow<NavigationEvent>,
     onNavigate: (Direction) -> Unit,
 ) {
     Log.d(
@@ -66,7 +66,7 @@ private fun CollectSplashScreenEvents(
     LaunchedEffect(key1 = true) {
         splashScreenEventFlow.collect { event ->
             when (event) {
-                is UiEvent.Navigate -> {
+                is NavigationEvent.Navigate -> {
                     Log.d(tag, "CollectSplashScreenEvents | Navigate")
                     onNavigate(event.destination)
                 }

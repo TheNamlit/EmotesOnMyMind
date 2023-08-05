@@ -23,8 +23,8 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.spec.Direction
 import com.thenamlit.emotesonmymind.core.presentation.components.DefaultCoilImage
-import com.thenamlit.emotesonmymind.core.presentation.util.UiEvent
 import com.thenamlit.emotesonmymind.core.util.Logging
+import com.thenamlit.emotesonmymind.core.util.UiText
 import com.thenamlit.emotesonmymind.features.emotes.domain.models.EmoteDetails
 import kotlinx.coroutines.flow.SharedFlow
 import java.time.LocalDateTime
@@ -56,13 +56,18 @@ fun EmoteDetailsScreen(
     //  High res (and most recent): https://7tv.app/emotes/6309e73ffe72a7a37ff476f5
     //  Older/original version: https://7tv.app/emotes/62d95f5bfd736ba230c05b57
 
+    val context = LocalContext.current
     CollectEmoteDetailsScreenEvents(
         emoteDetailsScreenEventFlow = viewModel.emoteDetailsScreenEventFlow,
         onNavigate = { direction: Direction ->
-            Log.d(tag, "onNavigate-direction: $direction")
-
             navigator.navigate(direction = direction)
         },
+        onSingleError = { _: UiText?, text: UiText ->
+            viewModel.showSnackbar(text = text.asString(context = context))
+        },
+        onSuccessfulDownload = { text: UiText ->
+            viewModel.showSnackbar(text = text.asString(context = context))
+        }
     )
 
     ObserveWorkerState(
@@ -75,6 +80,7 @@ fun EmoteDetailsScreen(
     EmoteDetailsScreenScaffold(
         emoteDetails = emoteDetailsState.emoteDetails,
         imageLoader = viewModel.getImageLoader(),
+        snackbarHostState = emoteDetailsState.snackbarHostState,
         onNavigationIconClicked = { navigator.navigateUp() },
         onTopAppBarUserProfileIconClicked = {
             viewModel.setShowEmoteUserAlertDialog(showAlertDialog = true)
@@ -168,8 +174,10 @@ private fun EmoteUserDialog(
 
 @Composable
 private fun CollectEmoteDetailsScreenEvents(
-    emoteDetailsScreenEventFlow: SharedFlow<UiEvent>,
+    emoteDetailsScreenEventFlow: SharedFlow<EmoteDetailsScreenEvent>,
     onNavigate: (Direction) -> Unit,
+    onSingleError: (title: UiText?, text: UiText) -> Unit,
+    onSuccessfulDownload: (text: UiText) -> Unit,
 ) {
     Log.d(
         tag,
@@ -178,17 +186,12 @@ private fun CollectEmoteDetailsScreenEvents(
 
     LaunchedEffect(key1 = true) {
         emoteDetailsScreenEventFlow.collect { event ->
-            when (event) {
-                is UiEvent.Navigate -> {
-                    Log.d(tag, "CollectEmoteDetailsScreenEvents | Navigate")
-
-                    onNavigate(event.destination)
-                }
-
-                else -> {
-                    Log.d(tag, "CollectEmoteDetailsScreenEvents | Other Event")
-                }
-            }
+            event.handleEvents(
+                event = event,
+                onNavigate = onNavigate,
+                onSingleError = onSingleError,
+                onSuccessfulDownload = onSuccessfulDownload
+            )
         }
     }
 }

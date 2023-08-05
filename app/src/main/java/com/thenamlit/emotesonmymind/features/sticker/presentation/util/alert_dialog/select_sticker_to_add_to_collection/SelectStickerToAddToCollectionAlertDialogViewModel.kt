@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import coil.ImageLoader
 import com.thenamlit.emotesonmymind.core.domain.models.Sticker
 import com.thenamlit.emotesonmymind.core.domain.models.StickerCollection
-import com.thenamlit.emotesonmymind.core.presentation.util.UiEvent
 import com.thenamlit.emotesonmymind.core.util.Logging
 import com.thenamlit.emotesonmymind.core.util.Resource
 import com.thenamlit.emotesonmymind.features.sticker.domain.use_case.GetStickerUseCase
@@ -41,7 +40,8 @@ class SelectStickerToAddToCollectionAlertDialogViewModel @Inject constructor(
             StateFlow<SelectStickerToAddToCollectionAlertDialogState> =
         _selectStickerToAddToCollectionAlertDialogStateFlow.asStateFlow()
 
-    private val _selectStickerToAddToCollectionAlertDialogEventFlow = MutableSharedFlow<UiEvent>()
+    private val _selectStickerToAddToCollectionAlertDialogEventFlow =
+        MutableSharedFlow<SelectStickerToAddToCollectionAlertDialogEvent>()
     val selectStickerToAddToCollectionAlertDialogEventFlow =
         _selectStickerToAddToCollectionAlertDialogEventFlow.asSharedFlow()
 
@@ -195,7 +195,9 @@ class SelectStickerToAddToCollectionAlertDialogViewModel @Inject constructor(
                     )
 
                     viewModelScope.launch {
-                        _selectStickerToAddToCollectionAlertDialogEventFlow.emit(UiEvent.Save)
+                        _selectStickerToAddToCollectionAlertDialogEventFlow.emit(
+                            value = SelectStickerToAddToCollectionAlertDialogEvent.Save
+                        )
                     }
                 }
 

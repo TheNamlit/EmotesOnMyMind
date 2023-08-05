@@ -1,10 +1,13 @@
 package com.thenamlit.emotesonmymind.features.sticker.presentation.collection_details
 
+import androidx.compose.material3.SnackbarHostState
 import com.thenamlit.emotesonmymind.core.domain.models.StickerCollection
 import com.thenamlit.emotesonmymind.core.util.UiText
 
 
 data class StickerCollectionDetailsState(
+    val snackbarHostState: SnackbarHostState = SnackbarHostState(),
+
     val collection: StickerCollection = getDefaultStickerCollection(),
     val collectionId: String = "",
 

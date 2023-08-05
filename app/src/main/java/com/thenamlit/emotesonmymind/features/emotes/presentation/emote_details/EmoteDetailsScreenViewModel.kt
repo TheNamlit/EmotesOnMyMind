@@ -9,10 +9,12 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import coil.ImageLoader
 import com.thenamlit.emotesonmymind.core.domain.models.Sticker
-import com.thenamlit.emotesonmymind.core.presentation.util.UiEvent
+import com.thenamlit.emotesonmymind.core.presentation.util.ErrorEvent
+import com.thenamlit.emotesonmymind.core.presentation.util.NavigationEvent
 import com.thenamlit.emotesonmymind.core.util.DownloadAndScaleImageWorker
 import com.thenamlit.emotesonmymind.core.util.Logging
 import com.thenamlit.emotesonmymind.core.util.Resource
+import com.thenamlit.emotesonmymind.core.util.UiText
 import com.thenamlit.emotesonmymind.features.destinations.ProfileScreenDestination
 import com.thenamlit.emotesonmymind.features.destinations.StickerDetailsScreenDestination
 import com.thenamlit.emotesonmymind.features.emotes.domain.models.EmoteDetails
@@ -46,8 +48,9 @@ class EmoteDetailsScreenViewModel @Inject constructor(
     private val _emoteDetailsStateFlow = MutableStateFlow(EmoteDetailsState())
     val emoteDetailsStateFlow: StateFlow<EmoteDetailsState> = _emoteDetailsStateFlow.asStateFlow()
 
-    private val _emoteDetailsScreenEventFlow = MutableSharedFlow<UiEvent>()
+    private val _emoteDetailsScreenEventFlow = MutableSharedFlow<EmoteDetailsScreenEvent>()
     val emoteDetailsScreenEventFlow = _emoteDetailsScreenEventFlow.asSharedFlow()
+
 
     init {
         Log.d(tag, "init")
@@ -57,8 +60,16 @@ class EmoteDetailsScreenViewModel @Inject constructor(
             isEmoteAlreadySavedAsSticker(emoteId = emoteId)
         } ?: kotlin.run {
             Log.e(tag, "Couldn't get EmoteId from SavedStateHandle")
-            // TODO: Display Error
+            // TODO:
+            //  Can't emit event here because it doesn't get observed from the screen yet
+            //  Could maybe display an error saved in state instead of making it an empty screen?
         }
+    }
+
+    private fun getEmoteIdFromSavedState(): String? {
+        Log.d(tag, "getEmoteIdFromSavedState")
+
+        return savedStateHandle.get<String>("emoteId")
     }
 
     fun getImageLoader(): ImageLoader {
@@ -67,11 +78,48 @@ class EmoteDetailsScreenViewModel @Inject constructor(
         return imageLoader
     }
 
-    private fun getEmoteIdFromSavedState(): String? {
-        Log.d(tag, "getEmoteIdFromSavedState")
+    private fun emitSingleError(uiText: UiText) {
+        Log.d(tag, "emitSingleError | uiText: $uiText")
 
-        return savedStateHandle.get<String>("emoteId")
+        viewModelScope.launch(Dispatchers.IO) {
+            _emoteDetailsScreenEventFlow.emit(
+                value = EmoteDetailsScreenEvent.Error(
+                    errorEvent = ErrorEvent.SingleError(
+                        text = uiText
+                    )
+                )
+            )
+        }
     }
+
+    private fun emitSingleSuccess(uiText: UiText) {
+        Log.d(tag, "emitSingleSuccess | uiText: $uiText")
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _emoteDetailsScreenEventFlow.emit(
+                value = EmoteDetailsScreenEvent.Error(
+                    errorEvent = ErrorEvent.SingleError(
+                        text = uiText
+                    )
+                )
+            )
+        }
+    }
+
+    fun showSnackbar(text: String) {
+        Log.d(tag, "showSnackbar | text: $text")
+
+        viewModelScope.launch {
+            _emoteDetailsStateFlow.value.snackbarHostState.showSnackbar(message = text)
+        }
+    }
+
+
+    /*
+     *
+     * Emote & Sticker
+     *
+     */
 
     private fun getEmoteDetails(emoteId: String) {
         Log.d(tag, "getEmoteDetails | emoteId: $emoteId")
@@ -90,74 +138,20 @@ class EmoteDetailsScreenViewModel @Inject constructor(
                         setEmoteDetails(emoteDetails = emoteDetails)
                     } ?: kotlin.run {
                         Log.e(tag, "getEmoteDetails | EmoteDetails undefined")
+                        emitSingleError(uiText = UiText.unknownError())
                     }
                 }
 
                 is Resource.Error -> {
                     Log.e(tag, "getEmoteDetails | Error: ${emoteDetailsResult.uiText}")
-                    // TODO: Display Error
+                    emoteDetailsResult.uiText?.let { uiText: UiText ->
+                        emitSingleError(uiText = uiText)
+                    } ?: kotlin.run {
+                        Log.e(tag, "getEmoteDetails | UiText is undefined")
+                        emitSingleError(uiText = UiText.unknownError())
+                    }
                 }
             }
-        }
-    }
-
-    private fun setEmoteDetails(emoteDetails: EmoteDetails) {
-        Log.d(tag, "setEmoteDetails | emoteDetails: $emoteDetails")
-
-        _emoteDetailsStateFlow.value = emoteDetailsStateFlow.value.copy(emoteDetails = emoteDetails)
-    }
-
-    fun setShowEmoteUserAlertDialog(showAlertDialog: Boolean) {
-        Log.d(tag, "setShowEmoteUserAlertDialog | showAlertDialog: $showAlertDialog")
-
-        _emoteDetailsStateFlow.value =
-            emoteDetailsStateFlow.value.copy(showEmoteUserAlertDialog = showAlertDialog)
-    }
-
-    private fun setEmoteToStickerButtonState(emoteToStickerButtonState: EmoteToStickerButtonState) {
-        Log.d(
-            tag,
-            "setEmoteToStickerButtonState | emoteToStickerButtonState: $emoteToStickerButtonState"
-        )
-
-        _emoteDetailsStateFlow.value =
-            emoteDetailsStateFlow.value.copy(emoteToStickerButtonState = emoteToStickerButtonState)
-    }
-
-    private fun setSticker(sticker: Sticker) {
-        Log.d(tag, "setSticker | sticker: $sticker")
-
-        _emoteDetailsStateFlow.value = emoteDetailsStateFlow.value.copy(sticker = sticker)
-    }
-
-    fun navigateToEmoteUserProfile() {
-        Log.d(tag, "navigateToEmoteUserProfile")
-
-        viewModelScope.launch(Dispatchers.IO) {
-            // TODO: To EmoteUserProfile and not own ProfileScreen
-            _emoteDetailsScreenEventFlow.emit(
-                UiEvent.Navigate(
-                    destination = ProfileScreenDestination()
-                )
-            )
-        }
-    }
-
-    fun navigateToStickerDetailsScreen() {
-        Log.d(tag, "navigateToStickerDetailsScreen")
-
-        _emoteDetailsStateFlow.value.sticker?.let { sticker: Sticker ->
-            viewModelScope.launch(Dispatchers.IO) {
-                _emoteDetailsScreenEventFlow.emit(
-                    UiEvent.Navigate(
-                        destination = StickerDetailsScreenDestination(
-                            sticker = sticker
-                        )
-                    )
-                )
-            }
-        } ?: kotlin.run {
-            Log.e(tag, "navigateToStickerDetailsScreen | Sticker is undefined")
         }
     }
 
@@ -179,6 +173,7 @@ class EmoteDetailsScreenViewModel @Inject constructor(
                         )
                     } ?: kotlin.run {
                         Log.e(tag, "isEmoteAlreadySavedAsSticker | Sticker is undefined")
+                        emitSingleError(uiText = UiText.unknownError())
                     }
                 }
 
@@ -228,6 +223,13 @@ class EmoteDetailsScreenViewModel @Inject constructor(
         }
     }
 
+
+    /*
+     *
+     * Worker
+     *
+     */
+
     private suspend fun listenForWorkerResult(workId: UUID) {
         Log.d(tag, "listenForWorkerResult | workId: $workId")
 
@@ -247,6 +249,11 @@ class EmoteDetailsScreenViewModel @Inject constructor(
                         Log.d(tag, "listenForWorkerResult | Success! $resultText")
 
                         setWorkerState(workerState = WorkerState.Success)
+                        emitSingleSuccess(
+                            uiText = UiText.DynamicString(
+                                value = "Download successful"
+                            )
+                        )
                     } else {
                         if (progress == 100) {
                             setWorkerState(
@@ -254,12 +261,15 @@ class EmoteDetailsScreenViewModel @Inject constructor(
                                     message = "listenForWorkerResult | Worker Failed! $resultText"
                                 )
                             )
+
+                            emitSingleError(uiText = UiText.DynamicString(value = "Download failed"))
                         } else {
                             Log.d(tag, "listenForWorkerResult | Still progressing...")
                         }
                     }
                 } ?: kotlin.run {
                     Log.e(tag, "listenForWorkerResult | WorkInfoResult is undefined")
+                    emitSingleError(uiText = UiText.unknownError())
                 }
             }
     }
@@ -268,5 +278,83 @@ class EmoteDetailsScreenViewModel @Inject constructor(
         Log.d(tag, "setWorkerState | workerState: $workerState")
 
         _emoteDetailsStateFlow.value = emoteDetailsStateFlow.value.copy(workerState = workerState)
+    }
+
+
+    /*
+     *
+     * Navigate
+     *
+     */
+
+    fun navigateToEmoteUserProfile() {
+        Log.d(tag, "navigateToEmoteUserProfile")
+
+        viewModelScope.launch(Dispatchers.IO) {
+            // TODO: To EmoteUserProfile and not own ProfileScreen
+            _emoteDetailsScreenEventFlow.emit(
+                value = EmoteDetailsScreenEvent.Navigate(
+                    navigationEvent = NavigationEvent.Navigate(
+                        destination = ProfileScreenDestination()
+                    )
+                )
+            )
+        }
+    }
+
+    fun navigateToStickerDetailsScreen() {
+        Log.d(tag, "navigateToStickerDetailsScreen")
+
+        _emoteDetailsStateFlow.value.sticker?.let { sticker: Sticker ->
+            viewModelScope.launch(Dispatchers.IO) {
+                _emoteDetailsScreenEventFlow.emit(
+                    value = EmoteDetailsScreenEvent.Navigate(
+                        navigationEvent = NavigationEvent.Navigate(
+                            destination = StickerDetailsScreenDestination(
+                                sticker = sticker
+                            )
+                        )
+                    )
+                )
+            }
+        } ?: kotlin.run {
+            Log.e(tag, "navigateToStickerDetailsScreen | Sticker is undefined")
+        }
+    }
+
+
+    /*
+     *
+     * State-Functions
+     *
+     */
+
+    private fun setEmoteDetails(emoteDetails: EmoteDetails) {
+        Log.d(tag, "setEmoteDetails | emoteDetails: $emoteDetails")
+
+        _emoteDetailsStateFlow.value = emoteDetailsStateFlow.value.copy(emoteDetails = emoteDetails)
+    }
+
+    fun setShowEmoteUserAlertDialog(showAlertDialog: Boolean) {
+        Log.d(tag, "setShowEmoteUserAlertDialog | showAlertDialog: $showAlertDialog")
+
+        _emoteDetailsStateFlow.value =
+            emoteDetailsStateFlow.value.copy(showEmoteUserAlertDialog = showAlertDialog)
+    }
+
+    private fun setEmoteToStickerButtonState(emoteToStickerButtonState: EmoteToStickerButtonState) {
+        Log.d(
+            tag,
+            "setEmoteToStickerButtonState | emoteToStickerButtonState: $emoteToStickerButtonState"
+        )
+
+        _emoteDetailsStateFlow.value =
+            emoteDetailsStateFlow.value.copy(emoteToStickerButtonState = emoteToStickerButtonState)
+    }
+
+    private fun setSticker(sticker: Sticker) {
+        Log.d(tag, "setSticker | sticker: $sticker")
+
+        _emoteDetailsStateFlow.value = emoteDetailsStateFlow.value.copy(sticker = sticker)
     }
 }

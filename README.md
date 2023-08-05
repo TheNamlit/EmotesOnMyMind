@@ -122,6 +122,11 @@ a native iOS-Application-Counterpart or converting it to a cross-platform Applic
 Because I already worked with RoomDB before, I chose MongoDB Realm for this project to explore some
 new technologies.
 
+During development, the option `deleteRealmIfMigrationNeeded` is enabled for MongoDB (found
+in `AppModule.kt`). It disables the need of migrations for now, which makes developing with database
+changes a lot easier. However this will result in the deletion of the local database everytime a
+schema changes. So previously saved Stickers will be missing after database changes.
+
 [7TV's public API.v3](https://7tv.io/docs) is still under development, which is why I decided to use
 their GraphQL-Endpoint instead. The GraphQL-Endpoint is also being used on their Website to load all
 the Emotes.

@@ -15,7 +15,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.thenamlit.emotesonmymind.core.domain.models.Sticker
 import com.thenamlit.emotesonmymind.core.domain.models.StickerCollection
-import com.thenamlit.emotesonmymind.core.presentation.util.UiEvent
 import com.thenamlit.emotesonmymind.core.util.Logging
 import kotlinx.coroutines.flow.SharedFlow
 
@@ -91,7 +90,7 @@ fun SelectStickerToAddToCollectionAlertDialog(
 
 @Composable
 private fun CollectSelectStickerToAddToCollectionAlertDialogEvents(
-    stickerCollectionDetailsScreenEventFlow: SharedFlow<UiEvent>,
+    stickerCollectionDetailsScreenEventFlow: SharedFlow<SelectStickerToAddToCollectionAlertDialogEvent>,
     onSave: () -> Unit,
     resetState: () -> Unit,
 ) {
@@ -100,8 +99,11 @@ private fun CollectSelectStickerToAddToCollectionAlertDialogEvents(
     LaunchedEffect(key1 = true) {
         stickerCollectionDetailsScreenEventFlow.collect { event ->
             when (event) {
-                is UiEvent.Save -> {
-                    Log.d(tag, "CollectSelectStickerToAddToCollectionAlertDialogEvents | Save")
+                is SelectStickerToAddToCollectionAlertDialogEvent.Save -> {
+                    Log.d(
+                        tag, "CollectSelectStickerToAddToCollectionAlertDialogEvents | " +
+                                "SelectStickerToAddToCollectionAlertDialogEvent.Save"
+                    )
 
                     resetState()
                     onSave()

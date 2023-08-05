@@ -1,5 +1,6 @@
 package com.thenamlit.emotesonmymind.features.sticker.presentation.sticker_details
 
+import androidx.compose.material3.SnackbarHostState
 import com.thenamlit.emotesonmymind.core.domain.models.Sticker
 import com.thenamlit.emotesonmymind.core.domain.models.StickerImageData
 import com.thenamlit.emotesonmymind.core.domain.models.StickerRemoteEmoteData
@@ -8,6 +9,8 @@ import com.thenamlit.emotesonmymind.core.domain.models.StickerRemoteEmoteDataOwn
 
 
 data class StickerDetailsState(
+    val snackbarHostState: SnackbarHostState = SnackbarHostState(),
+
     val sticker: Sticker = getDefaultSticker(),
 
     val showAddStickerToCollectionAlertDialog: Boolean = false,

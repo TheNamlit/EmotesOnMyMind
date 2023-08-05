@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -29,6 +30,7 @@ import com.thenamlit.emotesonmymind.core.presentation.components.DefaultCoilImag
 import com.thenamlit.emotesonmymind.core.presentation.components.DefaultDockedSearchBar
 import com.thenamlit.emotesonmymind.core.util.Logging
 import com.thenamlit.emotesonmymind.features.emotes.domain.models.MainFeedEmote
+import com.thenamlit.emotesonmymind.features.emotes.domain.models.MainFeedEmoteSearchHistoryItem
 
 
 private const val tag = "${Logging.loggingPrefix}MainFeedScreenContent"
@@ -37,22 +39,34 @@ private const val tag = "${Logging.loggingPrefix}MainFeedScreenContent"
 @Composable
 fun MainFeedScreenContent(
     modifier: Modifier,
-    mainFeedState: MainFeedState,
+    searchBarFocusRequester: FocusRequester,
     imageLoader: ImageLoader,
+    query: String,
+    isLoading: Boolean,
     filterChipItems: List<MainFeedScreenStateFilterChipItem>,
+    searchBarHeight: Float,
+    searchActive: Boolean,
+    searchHistory: List<MainFeedEmoteSearchHistoryItem>,
+    displayedEmotes: List<MainFeedEmote>,
     onSearchActiveChanged: (Boolean) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
     onSearchBarCloseIconClicked: () -> Unit,
     onEmoteClicked: (MainFeedEmote) -> Unit,
     checkForLoadNextEmotes: (Int) -> Unit,
-    isLoading: Boolean,
 ) {
     Log.d(
         tag,
         "MainFeedScreenContent | modifier: $modifier, " +
-                "mainFeedState: $mainFeedState, " +
-                "isLoading: $isLoading"
+                "searchBarFocusRequester: $searchBarFocusRequester, " +
+                "imageLoader: $imageLoader, " +
+                "query: $query, " +
+                "isLoading: $isLoading, " +
+                "filterChipItems: $filterChipItems, " +
+                "searchBarHeight: $searchBarHeight, " +
+                "searchActive: $searchActive, " +
+                "searchHistory: $searchHistory, " +
+                "displayedEmotes: $displayedEmotes"
     )
 
     Column(
@@ -61,11 +75,11 @@ fun MainFeedScreenContent(
     ) {
         DefaultDockedSearchBar(
             modifier = Modifier
-                .focusRequester(focusRequester = mainFeedState.searchBarFocusRequester)
-                .fillMaxHeight(mainFeedState.searchBarHeight),
-            query = mainFeedState.query,
-            searchHistory = mainFeedState.searchHistory,
-            searchActive = mainFeedState.searchActive,
+                .focusRequester(focusRequester = searchBarFocusRequester)
+                .fillMaxHeight(searchBarHeight),
+            query = query,
+            searchHistory = searchHistory,
+            searchActive = searchActive,
             placeholderText = stringResource(id = R.string.main_feed_screen_search_bar_placeholder),
             onSearchActiveChanged = onSearchActiveChanged,
             onSearch = onSearch,
@@ -90,7 +104,7 @@ fun MainFeedScreenContent(
 
         EmoteGrid(
             modifier = Modifier.fillMaxSize(),
-            mainFeedEmotes = mainFeedState.displayedEmotes,
+            mainFeedEmotes = displayedEmotes,
             imageLoader = imageLoader,
             onEmoteClicked = { mainFeedEmote: MainFeedEmote ->
                 onEmoteClicked(mainFeedEmote)

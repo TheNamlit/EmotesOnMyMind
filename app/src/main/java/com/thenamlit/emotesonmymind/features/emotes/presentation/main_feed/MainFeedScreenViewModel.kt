@@ -5,9 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil.ImageLoader
 import com.thenamlit.emotesonmymind.core.domain.models.Sticker
-import com.thenamlit.emotesonmymind.core.presentation.util.UiEvent
+import com.thenamlit.emotesonmymind.core.presentation.util.ErrorEvent
+import com.thenamlit.emotesonmymind.core.presentation.util.NavigationEvent
 import com.thenamlit.emotesonmymind.core.util.Logging
 import com.thenamlit.emotesonmymind.core.util.Resource
+import com.thenamlit.emotesonmymind.core.util.UiText
 import com.thenamlit.emotesonmymind.core.util.pagination.PaginationImpl
 import com.thenamlit.emotesonmymind.features.destinations.EmoteDetailsScreenDestination
 import com.thenamlit.emotesonmymind.features.destinations.StickerDetailsScreenDestination
@@ -42,7 +44,7 @@ class MainFeedScreenViewModel @Inject constructor(
     private val _mainFeedStateFlow = MutableStateFlow(MainFeedState())
     val mainFeedStateFlow: StateFlow<MainFeedState> = _mainFeedStateFlow.asStateFlow()
 
-    private val _mainFeedScreenEventFlow = MutableSharedFlow<UiEvent>()
+    private val _mainFeedScreenEventFlow = MutableSharedFlow<MainFeedScreenEvent>()
     val mainFeedScreenEventFlow = _mainFeedScreenEventFlow.asSharedFlow()
 
     private val pagination = PaginationImpl(
@@ -77,18 +79,13 @@ class MainFeedScreenViewModel @Inject constructor(
         }
     )
 
+
     init {
         Log.d(tag, "init")
 
         initializeFilterChipItems()
         searchEmotes()
         loadNextEmotes()
-    }
-
-    fun getImageLoader(): ImageLoader {
-        Log.d(tag, "getImageLoader")
-
-        return imageLoader
     }
 
     private fun initializeFilterChipItems() {
@@ -114,6 +111,61 @@ class MainFeedScreenViewModel @Inject constructor(
         _mainFeedStateFlow.value = mainFeedStateFlow.value.copy(
             filterChipItems = filterChipItems,
         )
+    }
+
+    fun getImageLoader(): ImageLoader {
+        Log.d(tag, "getImageLoader")
+
+        return imageLoader
+    }
+
+    private fun emitSingleError(uiText: UiText) {
+        Log.d(tag, "emitSingleError | uiText: $uiText")
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _mainFeedScreenEventFlow.emit(
+                value = MainFeedScreenEvent.Error(
+                    errorEvent = ErrorEvent.SingleError(
+                        text = uiText
+                    )
+                )
+            )
+        }
+    }
+
+    fun showSnackbar(text: String) {
+        Log.d(tag, "showSnackbar | text: $text")
+
+        viewModelScope.launch {
+            _mainFeedStateFlow.value.snackbarHostState.showSnackbar(message = text)
+        }
+    }
+
+
+    /*
+     *
+     * Search, Filter & Display
+     *
+     */
+
+    fun loadNextEmotes() {
+        Log.d(tag, "loadNextEmotes")
+
+        viewModelScope.launch(Dispatchers.IO) {
+            pagination.loadNextItems()
+        }
+    }
+
+    fun searchEmotes() {
+        Log.d(tag, "searchEmotes | query: ${_mainFeedStateFlow.value.query}")
+
+        val searchQuery = _mainFeedStateFlow.value.query
+        addToSearchHistory(searchQuery = searchQuery)
+        setSearchedQuery(searchedQuery = searchQuery)
+        setEmotes(emotes = emptyList())
+        setDisplayedEmotes(mainFeedEmotes = emptyList())
+        setPage(page = 1)
+        loadNextEmotes()
     }
 
     private fun toggleMainFeedScreenStateFilterChipItemActive(
@@ -215,6 +267,56 @@ class MainFeedScreenViewModel @Inject constructor(
         }
     }
 
+
+    /*
+     *
+     * Search History
+     *
+     */
+
+    private fun getSearchHistory() {
+        Log.d(tag, "getSearchHistory")
+
+        viewModelScope.launch(Dispatchers.IO) {
+            getMainFeedEmotesSearchHistoryUseCase()
+                .collectLatest { mainFeedEmoteSearchHistoryItems: List<MainFeedEmoteSearchHistoryItem> ->
+                    setSearchHistory(searchHistory = mainFeedEmoteSearchHistoryItems)
+                }
+        }
+    }
+
+    private fun addToSearchHistory(searchQuery: String) {
+        Log.d(tag, "addToSearchHistory | searchQuery: $searchQuery")
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val addSearchQueryToHistoryResult =
+                addMainFeedEmoteSearchHistoryItemUseCase(searchQuery = searchQuery)
+
+            when (addSearchQueryToHistoryResult) {
+                is Resource.Success -> {
+                    Log.d(tag, "addToSearchHistory | Success")
+                }
+
+                is Resource.Error -> {
+                    Log.e(tag, "addToSearchHistory | ${addSearchQueryToHistoryResult.logging}")
+                    addSearchQueryToHistoryResult.uiText?.let { uiText: UiText ->
+                        emitSingleError(uiText = uiText)
+                    } ?: kotlin.run {
+                        Log.e(tag, "addToSearchHistory | UiText is undefined")
+                        emitSingleError(uiText = UiText.unknownError())
+                    }
+                }
+            }
+        }
+    }
+
+
+    /*
+     *
+     * Navigate
+     *
+     */
+
     fun navigateToDetails(mainFeedEmote: MainFeedEmote) {
         Log.d(tag, "navigateToDetails | mainFeedEmote: $mainFeedEmote")
 
@@ -232,21 +334,11 @@ class MainFeedScreenViewModel @Inject constructor(
                                     "instead of EmoteDetails"
                         )
 
-                        _mainFeedScreenEventFlow.emit(
-                            UiEvent.Navigate(
-                                destination = StickerDetailsScreenDestination(sticker = sticker)
-                            )
-                        )
+                        navigateToStickerDetailsScreen(sticker = sticker)
                     } ?: kotlin.run {
                         Log.e(tag, "navigateToDetails | Sticker is undefined")
 
-                        _mainFeedScreenEventFlow.emit(
-                            UiEvent.Navigate(
-                                destination = EmoteDetailsScreenDestination(
-                                    emoteId = mainFeedEmote.id
-                                )
-                            )
-                        )
+                        navigateToEmoteDetailsScreen(emoteId = mainFeedEmote.id)
                     }
                 }
 
@@ -256,15 +348,48 @@ class MainFeedScreenViewModel @Inject constructor(
                         "navigateToDetails | ${emoteAlreadyDownloadedAsStickerResult.logging}"
                     )
 
-                    _mainFeedScreenEventFlow.emit(
-                        UiEvent.Navigate(
-                            destination = EmoteDetailsScreenDestination(emoteId = mainFeedEmote.id)
-                        )
-                    )
+                    navigateToEmoteDetailsScreen(emoteId = mainFeedEmote.id)
                 }
             }
         }
     }
+
+    private fun navigateToStickerDetailsScreen(sticker: Sticker) {
+        Log.d(tag, "navigateToStickerDetailsScreen | sticker: $sticker")
+
+        viewModelScope.launch {
+            _mainFeedScreenEventFlow.emit(
+                value = MainFeedScreenEvent.Navigate(
+                    navigationEvent = NavigationEvent.Navigate(
+                        destination = StickerDetailsScreenDestination(sticker = sticker)
+                    )
+                )
+            )
+        }
+    }
+
+    private fun navigateToEmoteDetailsScreen(emoteId: String) {
+        Log.d(tag, "navigateToEmoteDetailsScreen | emoteId: $emoteId")
+
+        viewModelScope.launch {
+            _mainFeedScreenEventFlow.emit(
+                value = MainFeedScreenEvent.Navigate(
+                    navigationEvent = NavigationEvent.Navigate(
+                        destination = EmoteDetailsScreenDestination(
+                            emoteId = emoteId
+                        )
+                    )
+                )
+            )
+        }
+    }
+
+
+    /*
+     *
+     * State-Functions
+     *
+     */
 
     fun setQuery(query: String) {
         Log.d(tag, "setQuery | query: $query")
@@ -317,60 +442,10 @@ class MainFeedScreenViewModel @Inject constructor(
         _mainFeedStateFlow.value.searchBarFocusRequester.requestFocus()
     }
 
-    fun loadNextEmotes() {
-        Log.d(tag, "loadNextEmotes")
-
-        viewModelScope.launch(Dispatchers.IO) {
-            pagination.loadNextItems()
-        }
-    }
-
     private fun setPage(page: Int) {
         Log.d(tag, "setPage | page: $page")
 
         _mainFeedStateFlow.value = mainFeedStateFlow.value.copy(page = page)
-    }
-
-    fun searchEmotes() {
-        Log.d(tag, "searchEmotes | query: ${_mainFeedStateFlow.value.query}")
-
-        val searchQuery = _mainFeedStateFlow.value.query
-        addToSearchHistory(searchQuery = searchQuery)
-        setSearchedQuery(searchedQuery = searchQuery)
-        setEmotes(emotes = emptyList())
-        setDisplayedEmotes(mainFeedEmotes = emptyList())
-        setPage(page = 1)
-        loadNextEmotes()
-    }
-
-    private fun getSearchHistory() {
-        Log.d(tag, "getSearchHistory")
-
-        viewModelScope.launch(Dispatchers.IO) {
-            getMainFeedEmotesSearchHistoryUseCase()
-                .collectLatest { mainFeedEmoteSearchHistoryItems: List<MainFeedEmoteSearchHistoryItem> ->
-                    setSearchHistory(searchHistory = mainFeedEmoteSearchHistoryItems)
-                }
-        }
-    }
-
-    private fun addToSearchHistory(searchQuery: String) {
-        Log.d(tag, "addToSearchHistory | searchQuery: $searchQuery")
-
-        viewModelScope.launch(Dispatchers.IO) {
-            val addSearchQueryToHistoryResult =
-                addMainFeedEmoteSearchHistoryItemUseCase(searchQuery = searchQuery)
-
-            when (addSearchQueryToHistoryResult) {
-                is Resource.Success -> {
-                    Log.d(tag, "addToSearchHistory | Success")
-                }
-
-                is Resource.Error -> {
-                    Log.e(tag, "addToSearchHistory | ${addSearchQueryToHistoryResult.logging}")
-                }
-            }
-        }
     }
 
     private fun setSearchBarHeight(height: Float) {

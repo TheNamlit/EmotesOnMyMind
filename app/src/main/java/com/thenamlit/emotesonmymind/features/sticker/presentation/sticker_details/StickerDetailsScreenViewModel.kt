@@ -6,9 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil.ImageLoader
 import com.thenamlit.emotesonmymind.core.domain.models.Sticker
-import com.thenamlit.emotesonmymind.core.presentation.util.UiEvent
+import com.thenamlit.emotesonmymind.core.presentation.util.ErrorEvent
+import com.thenamlit.emotesonmymind.core.presentation.util.NavigationEvent
 import com.thenamlit.emotesonmymind.core.util.Logging
 import com.thenamlit.emotesonmymind.core.util.Resource
+import com.thenamlit.emotesonmymind.core.util.UiText
 import com.thenamlit.emotesonmymind.features.sticker.domain.use_case.collection_details.GetLocalStickerImageFileUseCase
 import com.thenamlit.emotesonmymind.features.sticker.domain.use_case.sticker_details.DeleteStickerUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,7 +38,7 @@ class StickerDetailsScreenViewModel @Inject constructor(
     val stickerDetailsStateFlow: StateFlow<StickerDetailsState> =
         _stickerDetailsStateFlow.asStateFlow()
 
-    private val _stickerDetailsScreenEventFlow = MutableSharedFlow<UiEvent>()
+    private val _stickerDetailsScreenEventFlow = MutableSharedFlow<StickerDetailsScreenEvent>()
     val stickerDetailsScreenEventFlow = _stickerDetailsScreenEventFlow.asSharedFlow()
 
 
@@ -47,22 +49,10 @@ class StickerDetailsScreenViewModel @Inject constructor(
             setSticker(sticker = sticker)
         } ?: kotlin.run {
             Log.e(tag, "init | Couldn't get Sticker from SavedStateHandle")
-            // TODO
+            // TODO:
+            //  Can't emit event here because it doesn't get observed from the screen yet
+            //  Could maybe display an error saved in state instead of making it an empty screen?
         }
-    }
-
-    private fun navigateUp() {
-        Log.d(tag, "navigateUp")
-
-        viewModelScope.launch {
-            _stickerDetailsScreenEventFlow.emit(UiEvent.NavigateUp)
-        }
-    }
-
-    fun getImageLoader(): ImageLoader {
-        Log.d(tag, "getImageLoader")
-
-        return imageLoader
     }
 
     private fun getStickerFromSavedState(): Sticker? {
@@ -77,68 +67,52 @@ class StickerDetailsScreenViewModel @Inject constructor(
         _stickerDetailsStateFlow.value = stickerDetailsStateFlow.value.copy(sticker = sticker)
     }
 
-    fun showAddStickerToCollectionAlertDialog() {
-        Log.d(tag, "showAddStickerToCollectionAlertDialog")
+    fun getImageLoader(): ImageLoader {
+        Log.d(tag, "getImageLoader")
 
-        setShowAddStickerToCollectionAlertDialog(showAlertDialog = true)
+        return imageLoader
     }
 
-    fun hideAddStickerToCollectionAlertDialog() {
-        Log.d(tag, "hideAddStickerToCollectionAlertDialog")
+    private fun navigateUp() {
+        Log.d(tag, "navigateUp")
 
-        setShowAddStickerToCollectionAlertDialog(showAlertDialog = false)
-    }
-
-    private fun setShowAddStickerToCollectionAlertDialog(showAlertDialog: Boolean) {
-        Log.d(tag, "setShowAddStickerToCollectionAlertDialog | showAlertDialog: $showAlertDialog")
-
-        _stickerDetailsStateFlow.value =
-            stickerDetailsStateFlow.value.copy(
-                showAddStickerToCollectionAlertDialog = showAlertDialog
+        viewModelScope.launch {
+            _stickerDetailsScreenEventFlow.emit(
+                value = StickerDetailsScreenEvent.Navigate(
+                    navigationEvent = NavigationEvent.NavigateUp
+                )
             )
+        }
     }
 
-    fun showCreateCollectionAlertDialog() {
-        Log.d(tag, "showCreateCollectionAlertDialog")
+    private fun emitSingleError(uiText: UiText) {
+        Log.d(tag, "emitSingleError | uiText: $uiText")
 
-        setShowCreateCollectionAlertDialog(showAlertDialog = true)
-    }
-
-    fun hideCreateCollectionAlertDialog() {
-        Log.d(tag, "hideCreateCollectionAlertDialog")
-
-        setShowCreateCollectionAlertDialog(showAlertDialog = false)
-    }
-
-    private fun setShowCreateCollectionAlertDialog(showAlertDialog: Boolean) {
-        Log.d(tag, "setShowCreateCollectionAlertDialog | showAlertDialog: $showAlertDialog")
-
-        _stickerDetailsStateFlow.value =
-            stickerDetailsStateFlow.value.copy(
-                showCreateCollectionAlertDialog = showAlertDialog
+        viewModelScope.launch(Dispatchers.IO) {
+            _stickerDetailsScreenEventFlow.emit(
+                value = StickerDetailsScreenEvent.Error(
+                    errorEvent = ErrorEvent.SingleError(
+                        text = uiText
+                    )
+                )
             )
+        }
     }
 
-    fun showDeleteStickerAlertDialog() {
-        Log.d(tag, "showDeleteStickerAlertDialog")
+    fun showSnackbar(text: String) {
+        Log.d(tag, "showSnackbar | text: $text")
 
-        setShowDeleteStickerAlertDialog(showAlertDialog = true)
+        viewModelScope.launch {
+            _stickerDetailsStateFlow.value.snackbarHostState.showSnackbar(message = text)
+        }
     }
 
-    fun hideDeleteStickerAlertDialog() {
-        Log.d(tag, "hideDeleteStickerAlertDialog")
 
-        setShowDeleteStickerAlertDialog(showAlertDialog = false)
-    }
-
-    private fun setShowDeleteStickerAlertDialog(showAlertDialog: Boolean) {
-        Log.d(tag, "setShowDeleteStickerAlertDialog | showAlertDialog: $showAlertDialog")
-
-        _stickerDetailsStateFlow.value =
-            stickerDetailsStateFlow.value.copy(
-                showDeleteStickerAlertDialog = showAlertDialog
-            )
-    }
+    /*
+     *
+     * Sticker stuff
+     *
+     */
 
     fun getLocalStickerImageFile(path: String): File? {
         Log.d(tag, "getLocalStickerImageFile | path: $path")
@@ -177,9 +151,99 @@ class StickerDetailsScreenViewModel @Inject constructor(
 
                 is Resource.Error -> {
                     Log.e(tag, "deleteSticker | ${deleteStickerResult.logging}")
-                    // TODO
+
+                    deleteStickerResult.uiText?.let { uiText: UiText ->
+                        emitSingleError(uiText = uiText)
+                    } ?: kotlin.run {
+                        Log.e(tag, "deleteSticker | UiText is undefined")
+                        emitSingleError(uiText = UiText.unknownError())
+                    }
                 }
             }
         }
+    }
+
+
+    /*
+     *
+     * AddStickerToCollectionAlertDialog
+     *
+     */
+
+    fun showAddStickerToCollectionAlertDialog() {
+        Log.d(tag, "showAddStickerToCollectionAlertDialog")
+
+        setShowAddStickerToCollectionAlertDialog(showAlertDialog = true)
+    }
+
+    fun hideAddStickerToCollectionAlertDialog() {
+        Log.d(tag, "hideAddStickerToCollectionAlertDialog")
+
+        setShowAddStickerToCollectionAlertDialog(showAlertDialog = false)
+    }
+
+    private fun setShowAddStickerToCollectionAlertDialog(showAlertDialog: Boolean) {
+        Log.d(tag, "setShowAddStickerToCollectionAlertDialog | showAlertDialog: $showAlertDialog")
+
+        _stickerDetailsStateFlow.value =
+            stickerDetailsStateFlow.value.copy(
+                showAddStickerToCollectionAlertDialog = showAlertDialog
+            )
+    }
+
+
+    /*
+     *
+     * CreateCollectionAlertDialog
+     *
+     */
+
+    fun showCreateCollectionAlertDialog() {
+        Log.d(tag, "showCreateCollectionAlertDialog")
+
+        setShowCreateCollectionAlertDialog(showAlertDialog = true)
+    }
+
+    fun hideCreateCollectionAlertDialog() {
+        Log.d(tag, "hideCreateCollectionAlertDialog")
+
+        setShowCreateCollectionAlertDialog(showAlertDialog = false)
+    }
+
+    private fun setShowCreateCollectionAlertDialog(showAlertDialog: Boolean) {
+        Log.d(tag, "setShowCreateCollectionAlertDialog | showAlertDialog: $showAlertDialog")
+
+        _stickerDetailsStateFlow.value =
+            stickerDetailsStateFlow.value.copy(
+                showCreateCollectionAlertDialog = showAlertDialog
+            )
+    }
+
+
+    /*
+     *
+     * DeleteStickerAlertDialog
+     *
+     */
+
+    fun showDeleteStickerAlertDialog() {
+        Log.d(tag, "showDeleteStickerAlertDialog")
+
+        setShowDeleteStickerAlertDialog(showAlertDialog = true)
+    }
+
+    fun hideDeleteStickerAlertDialog() {
+        Log.d(tag, "hideDeleteStickerAlertDialog")
+
+        setShowDeleteStickerAlertDialog(showAlertDialog = false)
+    }
+
+    private fun setShowDeleteStickerAlertDialog(showAlertDialog: Boolean) {
+        Log.d(tag, "setShowDeleteStickerAlertDialog | showAlertDialog: $showAlertDialog")
+
+        _stickerDetailsStateFlow.value =
+            stickerDetailsStateFlow.value.copy(
+                showDeleteStickerAlertDialog = showAlertDialog
+            )
     }
 }

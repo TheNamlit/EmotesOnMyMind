@@ -51,4 +51,5 @@
     <string name="validate_collection_for_whats_app_use_case_validate_file_dimensions_error">The File Dimensions of one Sticker doesn\'t seem to be correct.</string>
     <string name="validate_collection_for_whats_app_use_case_validate_sticker_amount_error">WhatsApp requires the Sticker–Collection to have between 3–30 Stickers.</string>
     <string name="check_for_whats_app_installation_use_case_error">It seems like WhatsApp is not installed on your device.</string>
+    <string name="sticker_details_screen_view_model_failed_to_initialize_sticker_details">Failed to initialize Sticker-Details.</string>
 </resources>

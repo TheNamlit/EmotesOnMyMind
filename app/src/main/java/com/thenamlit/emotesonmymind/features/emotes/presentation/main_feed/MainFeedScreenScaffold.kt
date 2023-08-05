@@ -6,6 +6,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -21,6 +23,7 @@ private const val tag = "${Logging.loggingPrefix}MainFeedScreenScaffold"
 fun MainFeedScreenScaffold(
     modifier: Modifier = Modifier,
     mainFeedState: MainFeedState,
+    snackbarHostState: SnackbarHostState,
     onFabClicked: () -> Unit,
     navigationBar: @Composable () -> Unit,
     content: @Composable (PaddingValues) -> Unit,
@@ -29,6 +32,7 @@ fun MainFeedScreenScaffold(
 
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = { MainFeedScreenTopAppBar() },
         floatingActionButton = { MainFeedScreenFloatingActionButton(onFabClicked = onFabClicked) },
         floatingActionButtonPosition = FabPosition.End,

@@ -12,7 +12,8 @@ import coil.ImageLoader
 import com.thenamlit.emotesonmymind.BuildConfig
 import com.thenamlit.emotesonmymind.core.domain.models.Sticker
 import com.thenamlit.emotesonmymind.core.domain.models.StickerCollection
-import com.thenamlit.emotesonmymind.core.presentation.util.UiEvent
+import com.thenamlit.emotesonmymind.core.presentation.util.ErrorEvent
+import com.thenamlit.emotesonmymind.core.presentation.util.NavigationEvent
 import com.thenamlit.emotesonmymind.core.util.Logging
 import com.thenamlit.emotesonmymind.core.util.Resource
 import com.thenamlit.emotesonmymind.core.util.SimpleResource
@@ -58,9 +59,11 @@ class StickerCollectionDetailsScreenViewModel @Inject constructor(
     val stickerCollectionDetailsStateFlow: StateFlow<StickerCollectionDetailsState> =
         _stickerCollectionDetailsStateFlow.asStateFlow()
 
-    private val _stickerCollectionDetailsScreenEventFlow = MutableSharedFlow<UiEvent>()
+    private val _stickerCollectionDetailsScreenEventFlow =
+        MutableSharedFlow<StickerCollectionDetailsScreenEvent>()
     val stickerCollectionDetailsScreenEventFlow =
         _stickerCollectionDetailsScreenEventFlow.asSharedFlow()
+
 
     init {
         Log.d(tag, "init")
@@ -70,7 +73,9 @@ class StickerCollectionDetailsScreenViewModel @Inject constructor(
             getStickerCollection()
         } ?: kotlin.run {
             Log.e(tag, "Couldn't get StickerCollectionId from SavedStateHandle")
-            // TODO
+            // TODO:
+            //  Can't emit event here because it doesn't get observed from the screen yet
+            //  Could maybe display an error saved in state instead of making it an empty screen?
         }
     }
 
@@ -80,12 +85,40 @@ class StickerCollectionDetailsScreenViewModel @Inject constructor(
         return savedStateHandle.get<String>("stickerCollectionId")
     }
 
-    private fun setStickerCollectionId(collectionId: String) {
-        Log.d(tag, "setStickerCollectionId | collectionId: $collectionId")
+    fun getImageLoader(): ImageLoader {
+        Log.d(tag, "getImageLoader")
 
-        _stickerCollectionDetailsStateFlow.value =
-            stickerCollectionDetailsStateFlow.value.copy(collectionId = collectionId)
+        return imageLoader
     }
+
+    private fun emitSingleError(uiText: UiText) {
+        Log.d(tag, "emitSingleError | uiText: $uiText")
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _stickerCollectionDetailsScreenEventFlow.emit(
+                value = StickerCollectionDetailsScreenEvent.Error(
+                    errorEvent = ErrorEvent.SingleError(
+                        text = uiText
+                    )
+                )
+            )
+        }
+    }
+
+    fun showSnackbar(text: String) {
+        Log.d(tag, "showSnackbar | text: $text")
+
+        viewModelScope.launch {
+            _stickerCollectionDetailsStateFlow.value.snackbarHostState.showSnackbar(message = text)
+        }
+    }
+
+
+    /*
+     *
+     * Sticker
+     *
+     */
 
     fun getStickerCollection() {
         Log.d(tag, "getStickerCollection")
@@ -111,13 +144,6 @@ class StickerCollectionDetailsScreenViewModel @Inject constructor(
                 }
             }
         }
-    }
-
-    private fun setStickerCollection(stickerCollection: StickerCollection) {
-        Log.d(tag, "setStickerCollection | stickerCollection: $stickerCollection")
-
-        _stickerCollectionDetailsStateFlow.value =
-            stickerCollectionDetailsStateFlow.value.copy(collection = stickerCollection)
     }
 
     fun getLocalStickerImageFile(path: String): File? {
@@ -167,27 +193,6 @@ class StickerCollectionDetailsScreenViewModel @Inject constructor(
         }
     }
 
-    private fun navigateUp() {
-        Log.d(tag, "navigateUp")
-
-        viewModelScope.launch {
-            _stickerCollectionDetailsScreenEventFlow.emit(UiEvent.NavigateUp)
-        }
-    }
-
-    fun getImageLoader(): ImageLoader {
-        Log.d(tag, "getImageLoader")
-
-        return imageLoader
-    }
-
-    private fun setMode(mode: StickerCollectionDetailsMode) {
-        Log.d(tag, "setMode | mode: $mode")
-
-        _stickerCollectionDetailsStateFlow.value =
-            stickerCollectionDetailsStateFlow.value.copy(mode = mode)
-    }
-
     fun onStickerClicked(sticker: Sticker) {
         Log.d(tag, "onStickerClicked | sticker: $sticker")
 
@@ -204,17 +209,6 @@ class StickerCollectionDetailsScreenViewModel @Inject constructor(
         }
     }
 
-    private fun navigateToStickerDetailsScreen(sticker: Sticker) {
-        Log.d(tag, "navigateToStickerDetailsScreen | sticker: $sticker")
-
-        viewModelScope.launch(Dispatchers.IO) {
-            _stickerCollectionDetailsScreenEventFlow.emit(
-                UiEvent.Navigate(
-                    destination = StickerDetailsScreenDestination(sticker = sticker)
-                )
-            )
-        }
-    }
 
     /*
      *
@@ -222,8 +216,31 @@ class StickerCollectionDetailsScreenViewModel @Inject constructor(
      *
      */
 
+    // TODO: TEMPORARY
+    private fun checkForAnimatedStickerCollectionBeingAddedToWhatsApp(): Boolean {
+        Log.d(tag, "checkForAnimatedStickerCollectionBeingAddedToWhatsApp")
+
+        return if (_stickerCollectionDetailsStateFlow.value.collection.animated) {
+            addToCanNotAddToWhatsAppInfoAlertErrors(
+                error = UiText.DynamicString(
+                    value = "The functionality for adding animated stickers to WhatsApp is not " +
+                            "supported at this time."
+                )
+            )
+            true
+        } else {
+            false
+        }
+    }
+
     fun tryToAddToWhatsApp(rememberLauncher: ManagedActivityResultLauncher<Intent, ActivityResult>) {
         Log.d(tag, "tryToAddToWhatsApp")
+
+        // TODO: This is just temporary until I implemented a functioning Download/Compress of animated Stickers
+        if (checkForAnimatedStickerCollectionBeingAddedToWhatsApp()) {
+            showCanNotAddToWhatsAppInfoAlertDialog()
+            return
+        }
 
         when (val checkForWhatsAppInstallResult = checkForWhatsAppInstall()) {
             is Resource.Success -> {
@@ -234,7 +251,25 @@ class StickerCollectionDetailsScreenViewModel @Inject constructor(
                     is Resource.Success -> {
                         Log.d(tag, "tryToAddToWhatsApp | Validation succeeded")
 
-                        addToWhatsApp(rememberLauncher = rememberLauncher)
+                        val addedToWhatsAppResult =
+                            addToWhatsApp(rememberLauncher = rememberLauncher)
+
+                        when (addedToWhatsAppResult) {
+                            is Resource.Success -> {
+                                Log.d(tag, "tryToAddToWhatsApp | Added to WhatsApp successfully")
+                            }
+
+                            is Resource.Error -> {
+                                Log.e(tag, "tryToAddToWhatsApp | ${addedToWhatsAppResult.logging}")
+
+                                addedToWhatsAppResult.uiText?.let { uiText: UiText ->
+                                    emitSingleError(uiText = uiText)
+                                } ?: kotlin.run {
+                                    Log.e(tag, "tryToAddToWhatsApp | UiText is undefined")
+                                    emitSingleError(uiText = UiText.unknownError())
+                                }
+                            }
+                        }
                     }
 
                     is Resource.Error -> {
@@ -263,7 +298,6 @@ class StickerCollectionDetailsScreenViewModel @Inject constructor(
     private fun checkForWhatsAppInstall(): SimpleResource {
         Log.d(tag, "checkForWhatsAppInstall")
 
-        // TODO: Implement check for WhatsApp-Package to make sure that it's installed
         return checkForWhatsAppInstallationUseCase()
     }
 
@@ -409,7 +443,13 @@ class StickerCollectionDetailsScreenViewModel @Inject constructor(
 
                 is Resource.Error -> {
                     Log.e(tag, "saveEditMode | ${updatedCollectionNameResult.logging}")
-                    // TODO: Show Error
+
+                    updatedCollectionNameResult.uiText?.let { uiText: UiText ->
+                        emitSingleError(uiText = uiText)
+                    } ?: kotlin.run {
+                        Log.e(tag, "saveEditMode | UiText is undefined")
+                        emitSingleError(uiText = UiText.unknownError())
+                    }
                 }
             }
         }
@@ -527,7 +567,6 @@ class StickerCollectionDetailsScreenViewModel @Inject constructor(
     fun showDeleteStickerCollectionAlertDialog() {
         Log.d(tag, "showDeleteStickerCollectionAlertDialog")
 
-        // TODO: Make this an event instead?
         setShowDeleteStickerCollectionAlertDialog(showAlertDialog = true)
     }
 
@@ -556,7 +595,6 @@ class StickerCollectionDetailsScreenViewModel @Inject constructor(
     private fun showCanNotAddToWhatsAppInfoAlertDialog() {
         Log.d(tag, "showCanNotAddToWhatsAppInfoAlertDialog")
 
-        // TODO: Make this an event instead?
         setShowCanNotAddToWhatsAppInfoAlertDialog(showAlertDialog = true)
     }
 
@@ -604,5 +642,68 @@ class StickerCollectionDetailsScreenViewModel @Inject constructor(
             stickerCollectionDetailsStateFlow.value.copy(
                 showSelectStickerToAddToCollectionAlertDialog = showAlertDialog
             )
+    }
+
+
+    /*
+     *
+     * Navigate
+     *
+     */
+
+    private fun navigateUp() {
+        Log.d(tag, "navigateUp")
+
+        viewModelScope.launch {
+            _stickerCollectionDetailsScreenEventFlow.emit(
+                StickerCollectionDetailsScreenEvent.Navigate(
+                    navigationEvent = NavigationEvent.NavigateUp
+                )
+            )
+        }
+    }
+
+    private fun navigateToStickerDetailsScreen(sticker: Sticker) {
+        Log.d(tag, "navigateToStickerDetailsScreen | sticker: $sticker")
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _stickerCollectionDetailsScreenEventFlow.emit(
+                value = StickerCollectionDetailsScreenEvent.Navigate(
+                    navigationEvent = NavigationEvent.Navigate(
+                        destination = StickerDetailsScreenDestination(
+                            sticker = sticker
+                        )
+                    )
+                )
+            )
+        }
+    }
+
+
+    /*
+     *
+     * Modify state functions
+     *
+     */
+
+    private fun setStickerCollectionId(collectionId: String) {
+        Log.d(tag, "setStickerCollectionId | collectionId: $collectionId")
+
+        _stickerCollectionDetailsStateFlow.value =
+            stickerCollectionDetailsStateFlow.value.copy(collectionId = collectionId)
+    }
+
+    private fun setMode(mode: StickerCollectionDetailsMode) {
+        Log.d(tag, "setMode | mode: $mode")
+
+        _stickerCollectionDetailsStateFlow.value =
+            stickerCollectionDetailsStateFlow.value.copy(mode = mode)
+    }
+
+    private fun setStickerCollection(stickerCollection: StickerCollection) {
+        Log.d(tag, "setStickerCollection | stickerCollection: $stickerCollection")
+
+        _stickerCollectionDetailsStateFlow.value =
+            stickerCollectionDetailsStateFlow.value.copy(collection = stickerCollection)
     }
 }

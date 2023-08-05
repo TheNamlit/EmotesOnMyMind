@@ -1,5 +1,6 @@
 package com.thenamlit.emotesonmymind.features.emotes.presentation.emote_details
 
+import androidx.compose.material3.SnackbarHostState
 import com.thenamlit.emotesonmymind.core.domain.models.Sticker
 import com.thenamlit.emotesonmymind.features.emotes.domain.models.EmoteDetails
 import com.thenamlit.emotesonmymind.features.emotes.domain.models.EmoteDetailsHost
@@ -9,6 +10,8 @@ import java.util.UUID
 
 
 data class EmoteDetailsState(
+    val snackbarHostState: SnackbarHostState = SnackbarHostState(),
+
     val formats: List<ImageFormat> = listOf(ImageFormat.WEBP),
     val emoteDetails: EmoteDetails = getDefaultEmoteDetails(),
 

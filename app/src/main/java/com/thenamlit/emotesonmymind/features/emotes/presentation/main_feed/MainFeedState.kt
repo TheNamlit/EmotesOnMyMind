@@ -1,5 +1,6 @@
 package com.thenamlit.emotesonmymind.features.emotes.presentation.main_feed
 
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.focus.FocusRequester
 import com.apollographql.apollo3.api.Optional
 import com.thenamlit.emotesonmymind.features.emotes.domain.models.MainFeedEmote
@@ -11,6 +12,8 @@ import com.thenamlit.emotesonmymind.type.SortOrder
 
 
 data class MainFeedState(
+    val snackbarHostState: SnackbarHostState = SnackbarHostState(),
+
     val query: String = "",
     val page: Int = 1,
     val limit: Int = 20,

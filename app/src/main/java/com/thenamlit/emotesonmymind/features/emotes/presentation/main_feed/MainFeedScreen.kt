@@ -8,24 +8,21 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import coil.ImageLoader
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.spec.Direction
 import com.thenamlit.emotesonmymind.core.presentation.components.BottomNavigationBar
-import com.thenamlit.emotesonmymind.core.presentation.util.UiEvent
 import com.thenamlit.emotesonmymind.core.util.Logging
+import com.thenamlit.emotesonmymind.core.util.UiText
 import com.thenamlit.emotesonmymind.features.emotes.domain.models.MainFeedEmote
 import kotlinx.coroutines.flow.SharedFlow
 
 
 private const val tag = "${Logging.loggingPrefix}MainFeedScreen"
 
-
-// TODO: Implement Filter to actually only show Animated/NotAnimated here -> Easier to build StickerCollections
-//  This doesn't work automatically with the API, so I have to build my own function for this
 @Destination
 @Composable
 fun MainFeedScreen(
@@ -33,24 +30,23 @@ fun MainFeedScreen(
     navController: NavController,
     viewModel: MainFeedScreenViewModel = hiltViewModel(),
 ) {
-    Log.d(
-        tag,
-        "MainFeedScreen | navigator: $navigator, " +
-                "navController: $navController, " +
-                "viewModel: $viewModel"
-    )
+    Log.d(tag, "MainFeedScreen | viewModel: $viewModel")
 
     val mainFeedState by viewModel.mainFeedStateFlow.collectAsState()
-    val imageLoader: ImageLoader = viewModel.getImageLoader()
 
+    val context = LocalContext.current
     CollectMainFeedScreenEvents(
         mainFeedScreenEventFlow = viewModel.mainFeedScreenEventFlow,
         onNavigate = { direction: Direction ->
             navigator.navigate(direction = direction)
-        }
+        },
+        onSingleError = { _: UiText?, text: UiText ->
+            viewModel.showSnackbar(text = text.asString(context = context))
+        },
     )
 
     MainFeedScreenScaffold(
+        snackbarHostState = mainFeedState.snackbarHostState,
         mainFeedState = mainFeedState,
         onFabClicked = {
             viewModel.setSearchActive(isActive = true)
@@ -67,8 +63,15 @@ fun MainFeedScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            mainFeedState = mainFeedState,
-            imageLoader = imageLoader,
+            searchBarFocusRequester = mainFeedState.searchBarFocusRequester,
+            imageLoader = viewModel.getImageLoader(),
+            query = mainFeedState.query,
+            isLoading = mainFeedState.isLoading,
+            filterChipItems = mainFeedState.filterChipItems,
+            searchBarHeight = mainFeedState.searchBarHeight,
+            searchActive = mainFeedState.searchActive,
+            searchHistory = mainFeedState.searchHistory,
+            displayedEmotes = mainFeedState.displayedEmotes,
             onSearchActiveChanged = { isActive -> viewModel.setSearchActive(isActive = isActive) },
             onSearchQueryChange = { query: String -> viewModel.setQuery(query = query) },
             onSearch = {
@@ -97,32 +100,25 @@ fun MainFeedScreen(
                     viewModel.loadNextEmotes()
                 }
             },
-            isLoading = mainFeedState.isLoading,
-            filterChipItems = mainFeedState.filterChipItems
         )
     }
 }
 
 @Composable
 private fun CollectMainFeedScreenEvents(
-    mainFeedScreenEventFlow: SharedFlow<UiEvent>,
+    mainFeedScreenEventFlow: SharedFlow<MainFeedScreenEvent>,
     onNavigate: (Direction) -> Unit,
+    onSingleError: (title: UiText?, text: UiText) -> Unit,
 ) {
     Log.d(tag, "CollectMainFeedScreenEvents | mainFeedScreenEventFlow: $mainFeedScreenEventFlow")
 
     LaunchedEffect(key1 = true) {
         mainFeedScreenEventFlow.collect { event ->
-            when (event) {
-                is UiEvent.Navigate -> {
-                    Log.d(tag, "CollectMainFeedScreenEvents | Navigate")
-
-                    onNavigate(event.destination)
-                }
-
-                else -> {
-                    Log.d(tag, "CollectMainFeedScreenEvents | Other Event")
-                }
-            }
+            event.handleEvents(
+                event = event,
+                onNavigate = onNavigate,
+                onSingleError = onSingleError
+            )
         }
     }
 }

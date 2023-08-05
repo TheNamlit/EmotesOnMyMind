@@ -15,7 +15,7 @@ private const val tag = "${Logging.loggingPrefix}CreateStickerCollectionAlertDia
 
 @Composable
 fun CreateStickerCollectionAlertDialog(
-    animated: Boolean = false,
+    animated: Boolean,
     onCloseDialog: () -> Unit,
     viewModel: CreateStickerCollectionAlertDialogViewModel = hiltViewModel(),
 ) {
@@ -26,9 +26,10 @@ fun CreateStickerCollectionAlertDialog(
 
     val stickerDetailsState by viewModel.createStickerCollectionAlertDialogStateFlow.collectAsState()
 
+    // TODO: Bugged atm, it auto-resets to init-value every time the user changes the AnimatedValue
     // Initially set animated value
     // This will be true if CreateStickerCollectionAlertDialog is called from an animated Sticker
-    viewModel.setAlertDialogCreateCollectionAnimatedValue(animated = animated)
+//    viewModel.setAlertDialogCreateCollectionAnimatedValue(animated = animated)
 
     CreateStickerCollectionAlertDialogContent(
         modifier = Modifier

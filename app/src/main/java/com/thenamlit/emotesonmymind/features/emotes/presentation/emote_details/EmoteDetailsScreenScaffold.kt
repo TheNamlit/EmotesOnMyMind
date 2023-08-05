@@ -7,6 +7,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -26,14 +28,20 @@ fun EmoteDetailsScreenScaffold(
     modifier: Modifier = Modifier,
     emoteDetails: EmoteDetails,
     imageLoader: ImageLoader,
+    snackbarHostState: SnackbarHostState,
     onNavigationIconClicked: () -> Unit,
     onTopAppBarUserProfileIconClicked: () -> Unit,
     content: @Composable (PaddingValues) -> Unit,
 ) {
-    Log.d(tag, "EmoteDetailsScreenScaffold | modifier: $modifier, emoteDetails: $emoteDetails")
+    Log.d(
+        tag, "EmoteDetailsScreenScaffold | modifier: $modifier, " +
+                "emoteDetails: $emoteDetails, " +
+                "imageLoader: $imageLoader"
+    )
 
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             EmoteDetailsScreenTopAppBar(
                 emoteDetails = emoteDetails,

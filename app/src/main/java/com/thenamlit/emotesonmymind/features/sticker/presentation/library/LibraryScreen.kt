@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.ramcosta.composedestinations.annotation.Destination
@@ -16,11 +17,10 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.ramcosta.composedestinations.spec.Direction
 import com.thenamlit.emotesonmymind.core.domain.models.Sticker
 import com.thenamlit.emotesonmymind.core.presentation.components.BottomNavigationBar
-import com.thenamlit.emotesonmymind.core.presentation.util.UiEvent
 import com.thenamlit.emotesonmymind.core.util.Logging
-import com.thenamlit.emotesonmymind.features.destinations.StickerDetailsScreenDestination
 import com.thenamlit.emotesonmymind.features.sticker.presentation.util.alert_dialog.create_sticker_collection.CreateStickerCollectionAlertDialog
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.collectLatest
 
 
 private const val tag = "${Logging.loggingPrefix}LibraryScreen"
@@ -44,13 +44,11 @@ fun LibraryScreen(
     // TODO: Display StickerCollection-Icon (Not yet implemented -> User can choose this one)
     //  Must be PNG afaik
 
+    val context = LocalContext.current
+
     CollectLibraryScreenEvents(
         libraryScreenEventFlow = viewModel.libraryScreenEventFlow,
-        onNavigate = { direction: Direction ->
-            Log.d(tag, "onNavigate-direction: $direction")
-
-            navigator.navigate(direction = direction)
-        }
+        onNavigate = { direction: Direction -> navigator.navigate(direction = direction) },
     )
 
     LibraryScreenScaffold(
@@ -72,32 +70,23 @@ fun LibraryScreen(
             imageLoader = viewModel.getImageLoader(),
             stickerCollections = state.stickerCollections,
             onStickerCollectionRowClicked = { stickerCollectionId: String ->
-                Log.d(
-                    tag,
-                    "onStickerCollectionRowClicked, stickerCollectionId: $stickerCollectionId"
+                viewModel.navigateToStickerCollectionDetails(
+                    stickerCollectionId = stickerCollectionId
                 )
-
-                viewModel.navigateToStickerCollectionDetails(stickerCollectionId = stickerCollectionId)
             },
             filterChipItems = state.filterChipItems,
             selectedTabIndex = state.selectedTabIndex,
             selectedTabCollections = state.selectedTabCollections,
             selectedTabStickers = state.selectedTabStickers,
             onCollectionsTabClicked = {
-                Log.d(tag, "onCollectionsTabClicked")
-
                 viewModel.selectCollectionsTab()
             },
             onStickersTabClicked = {
-                Log.d(tag, "onStickersTabClicked")
-
                 viewModel.selectStickersTab()
             },
             stickers = state.stickers,
             onStickerClicked = { sticker: Sticker ->
-                Log.d(tag, "onStickerClicked | $sticker")
-
-                navigator.navigate(StickerDetailsScreenDestination(sticker = sticker))
+                viewModel.navigateToStickerDetailsScreenDestination(sticker = sticker)
             },
             stickerImageFile = { path: String ->
                 viewModel.getLocalStickerImageFile(path = path)
@@ -113,33 +102,27 @@ fun LibraryScreen(
         CreateStickerCollectionAlertDialog(
             onCloseDialog = {
                 viewModel.setShowCreateCollectionAlertDialog(showAlertDialog = false)
-            }
+            },
+            animated = false
         )
     }
 }
 
 @Composable
 private fun CollectLibraryScreenEvents(
-    libraryScreenEventFlow: SharedFlow<UiEvent>,
+    libraryScreenEventFlow: SharedFlow<LibraryScreenEvent>,
     onNavigate: (Direction) -> Unit,
 ) {
     Log.d(tag, "CollectLibraryScreenEvents")
 
     LaunchedEffect(key1 = true) {
-        libraryScreenEventFlow.collect { event ->
+        libraryScreenEventFlow.collectLatest { event ->
             Log.d(tag, "CollectLibraryScreenEvents | Event: $event")
 
-            when (event) {
-                is UiEvent.Navigate -> {
-                    Log.d(tag, "CollectLibraryScreenEvents | Navigate")
-
-                    onNavigate(event.destination)
-                }
-
-                else -> {
-                    Log.d(tag, "CollectLibraryScreenEvents | Other Event")
-                }
-            }
+            event.handleEvents(
+                event = event,
+                onNavigate = onNavigate
+            )
         }
     }
 }

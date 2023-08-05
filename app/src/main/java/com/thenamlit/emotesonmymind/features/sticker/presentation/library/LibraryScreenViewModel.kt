@@ -6,10 +6,11 @@ import androidx.lifecycle.viewModelScope
 import coil.ImageLoader
 import com.thenamlit.emotesonmymind.core.domain.models.Sticker
 import com.thenamlit.emotesonmymind.core.domain.models.StickerCollection
-import com.thenamlit.emotesonmymind.core.presentation.util.UiEvent
+import com.thenamlit.emotesonmymind.core.presentation.util.NavigationEvent
 import com.thenamlit.emotesonmymind.core.util.Logging
 import com.thenamlit.emotesonmymind.core.util.Resource
 import com.thenamlit.emotesonmymind.features.destinations.StickerCollectionDetailsScreenDestination
+import com.thenamlit.emotesonmymind.features.destinations.StickerDetailsScreenDestination
 import com.thenamlit.emotesonmymind.features.sticker.domain.use_case.GetStickerUseCase
 import com.thenamlit.emotesonmymind.features.sticker.domain.use_case.collection.GetCollectionsUseCase
 import com.thenamlit.emotesonmymind.features.sticker.domain.use_case.collection_details.GetLocalStickerImageFileUseCase
@@ -39,7 +40,7 @@ class LibraryScreenViewModel @Inject constructor(
     val libraryScreenStateFlow: StateFlow<LibraryScreenState> =
         _libraryScreenStateFlow.asStateFlow()
 
-    private val _libraryScreenEventFlow = MutableSharedFlow<UiEvent>()
+    private val _libraryScreenEventFlow = MutableSharedFlow<LibraryScreenEvent>()
     val libraryScreenEventFlow = _libraryScreenEventFlow.asSharedFlow()
 
 
@@ -48,7 +49,6 @@ class LibraryScreenViewModel @Inject constructor(
      * BASE FUNCTIONS & INIT
      *
      */
-
 
     init {
         Log.d(tag, "init")
@@ -171,7 +171,6 @@ class LibraryScreenViewModel @Inject constructor(
      *
      */
 
-
     fun selectCollectionsTab() {
         Log.d(tag, "selectCollectionsTab")
 
@@ -189,21 +188,22 @@ class LibraryScreenViewModel @Inject constructor(
 
         resetStickerCollections()
 
-        _libraryScreenStateFlow.value.filterChipItems.forEach { filterChipItem: LibraryScreenStateFilterChipItem ->
-            when (filterChipItem.type) {
-                is LibraryScreenStateFilterChipItemType.Animated -> {
-                    if (filterChipItem.selected) {
-                        getAllAnimatedStickerCollections()
+        _libraryScreenStateFlow.value.filterChipItems
+            .forEach { filterChipItem: LibraryScreenStateFilterChipItem ->
+                when (filterChipItem.type) {
+                    is LibraryScreenStateFilterChipItemType.Animated -> {
+                        if (filterChipItem.selected) {
+                            getAllAnimatedStickerCollections()
+                        }
                     }
-                }
 
-                is LibraryScreenStateFilterChipItemType.NotAnimated -> {
-                    if (filterChipItem.selected) {
-                        getAllNotAnimatedStickerCollections()
+                    is LibraryScreenStateFilterChipItemType.NotAnimated -> {
+                        if (filterChipItem.selected) {
+                            getAllNotAnimatedStickerCollections()
+                        }
                     }
                 }
             }
-        }
     }
 
     private fun getAllAnimatedStickerCollections() {
@@ -214,7 +214,8 @@ class LibraryScreenViewModel @Inject constructor(
                 .collect { animatedStickerCollections: List<StickerCollection> ->
                     Log.d(
                         tag,
-                        "getAllAnimatedStickerCollections | animatedStickerCollections: $animatedStickerCollections"
+                        "getAllAnimatedStickerCollections | " +
+                                "animatedStickerCollections: $animatedStickerCollections"
                     )
 
                     _libraryScreenStateFlow.value = libraryScreenStateFlow.value.copy(
@@ -266,20 +267,6 @@ class LibraryScreenViewModel @Inject constructor(
         )
     }
 
-    fun navigateToStickerCollectionDetails(stickerCollectionId: String) {
-        Log.d(tag, "navigateToStickerCollectionDetails | stickerCollectionId: $stickerCollectionId")
-
-        viewModelScope.launch(Dispatchers.IO) {
-            _libraryScreenEventFlow.emit(
-                UiEvent.Navigate(
-                    destination = StickerCollectionDetailsScreenDestination(
-                        stickerCollectionId = stickerCollectionId
-                    )
-                )
-            )
-        }
-    }
-
     fun setShowCreateCollectionAlertDialog(showAlertDialog: Boolean) {
         Log.d(tag, "setShowCreateCollectionAlertDialog | showAlertDialog: $showAlertDialog")
 
@@ -295,7 +282,6 @@ class LibraryScreenViewModel @Inject constructor(
      * COLLECTIONS TAB
      *
      */
-
 
     fun selectStickersTab() {
         Log.d(tag, "selectStickersTab")
@@ -386,5 +372,42 @@ class LibraryScreenViewModel @Inject constructor(
             animatedStickers = emptyList(),
             notAnimatedStickers = emptyList()
         )
+    }
+
+
+    /*
+     *
+     * Navigate
+     *
+     */
+
+    fun navigateToStickerCollectionDetails(stickerCollectionId: String) {
+        Log.d(tag, "navigateToStickerCollectionDetails | stickerCollectionId: $stickerCollectionId")
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _libraryScreenEventFlow.emit(
+                LibraryScreenEvent.Navigate(
+                    navigationEvent = NavigationEvent.Navigate(
+                        destination = StickerCollectionDetailsScreenDestination(
+                            stickerCollectionId = stickerCollectionId
+                        )
+                    )
+                )
+            )
+        }
+    }
+
+    fun navigateToStickerDetailsScreenDestination(sticker: Sticker) {
+        Log.d(tag, "navigateToStickerDetailsScreenDestination | sticker: $sticker")
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _libraryScreenEventFlow.emit(
+                LibraryScreenEvent.Navigate(
+                    navigationEvent = NavigationEvent.Navigate(
+                        destination = StickerDetailsScreenDestination(sticker = sticker)
+                    )
+                )
+            )
+        }
     }
 }

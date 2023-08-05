@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -22,13 +23,14 @@ import com.ramcosta.composedestinations.result.NavResult
 import com.ramcosta.composedestinations.result.ResultRecipient
 import com.ramcosta.composedestinations.spec.Direction
 import com.thenamlit.emotesonmymind.core.domain.models.Sticker
-import com.thenamlit.emotesonmymind.core.presentation.util.UiEvent
 import com.thenamlit.emotesonmymind.core.util.Logging
+import com.thenamlit.emotesonmymind.core.util.UiText
 import com.thenamlit.emotesonmymind.features.destinations.StickerDetailsScreenDestination
 import com.thenamlit.emotesonmymind.features.sticker.presentation.util.alert_dialog.can_not_add_to_whats_app_info.CanNotAddToWhatsAppInfoAlertDialog
 import com.thenamlit.emotesonmymind.features.sticker.presentation.util.alert_dialog.delete_collection.DeleteStickerCollectionAlertDialog
 import com.thenamlit.emotesonmymind.features.sticker.presentation.util.alert_dialog.select_sticker_to_add_to_collection.SelectStickerToAddToCollectionAlertDialog
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.collectLatest
 
 
 private const val tag = "${Logging.loggingPrefix}StickerCollectionDetailsScreen"
@@ -78,6 +80,7 @@ fun StickerCollectionDetailsScreen(
         cancelDeleteStickerMode = { viewModel.cancelDeleteStickerMode() }
     )
 
+    val context = LocalContext.current
     CollectStickerCollectionDetailsScreenEvents(
         stickerCollectionDetailsScreenEventFlow = viewModel.stickerCollectionDetailsScreenEventFlow,
         onNavigate = { direction: Direction ->
@@ -85,7 +88,10 @@ fun StickerCollectionDetailsScreen(
         },
         onNavigateUp = {
             navigator.navigateUp()
-        }
+        },
+        onSingleError = { _: UiText?, text: UiText ->
+            viewModel.showSnackbar(text = text.asString(context = context))
+        },
     )
 
     // Have to wait for a response from WhatsApp - otherwise we just get an Error returned
@@ -97,14 +103,15 @@ fun StickerCollectionDetailsScreen(
     }
 
     StickerCollectionDetailsScreenScaffold(
-        onNavigationIconClicked = { navigator.navigateUp() },
-        onBottomAppBarAddButtonClicked = { viewModel.showSelectStickerToAddToCollectionAlertDialog() },
-        onBottomAppBarRemoveButtonClicked = { viewModel.enterDeleteStickerMode() },
-        onBottomAppBarEditButtonClicked = { viewModel.enterEditMode() },
         mode = stickerCollectionDetailsState.mode,
         collectionName = stickerCollectionDetailsState.collection.name,
         stickerAmount = stickerCollectionDetailsState.collection.stickers.size,
         editModeCollectionName = stickerCollectionDetailsState.editModeCollectionName,
+        snackbarHostState = stickerCollectionDetailsState.snackbarHostState,
+        onNavigationIconClicked = { navigator.navigateUp() },
+        onBottomAppBarAddButtonClicked = { viewModel.showSelectStickerToAddToCollectionAlertDialog() },
+        onBottomAppBarRemoveButtonClicked = { viewModel.enterDeleteStickerMode() },
+        onBottomAppBarEditButtonClicked = { viewModel.enterEditMode() },
         onCollectionNameChanged = { newCollectionName: String ->
             viewModel.setEditModeCollectionName(name = newCollectionName)
         },
@@ -213,31 +220,21 @@ private fun BackHandlerSettings(
 
 @Composable
 private fun CollectStickerCollectionDetailsScreenEvents(
-    stickerCollectionDetailsScreenEventFlow: SharedFlow<UiEvent>,
+    stickerCollectionDetailsScreenEventFlow: SharedFlow<StickerCollectionDetailsScreenEvent>,
     onNavigate: (Direction) -> Unit,
     onNavigateUp: () -> Unit,
+    onSingleError: (title: UiText?, text: UiText) -> Unit,
 ) {
     Log.d(tag, "CollectStickerCollectionDetailsScreenEvents")
 
     LaunchedEffect(key1 = true) {
-        stickerCollectionDetailsScreenEventFlow.collect { event ->
-            when (event) {
-                is UiEvent.Navigate -> {
-                    Log.d(tag, "CollectStickerCollectionDetailsScreenEvents | Navigate")
-
-                    onNavigate(event.destination)
-                }
-
-                is UiEvent.NavigateUp -> {
-                    Log.d(tag, "CollectStickerCollectionDetailsScreenEvents | NavigateUp")
-
-                    onNavigateUp()
-                }
-
-                else -> {
-                    Log.d(tag, "CollectStickerCollectionDetailsScreenEvents | Other Event")
-                }
-            }
+        stickerCollectionDetailsScreenEventFlow.collectLatest { event ->
+            event.handleEvents(
+                event = event,
+                onNavigate = onNavigate,
+                onNavigateUp = onNavigateUp,
+                onSingleError = onSingleError,
+            )
         }
     }
 }
