@@ -6,6 +6,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -20,8 +22,9 @@ private const val tag = "${Logging.loggingPrefix}LibraryScreenScaffold"
 @Composable
 fun LibraryScreenScaffold(
     modifier: Modifier = Modifier,
-    navigationBar: @Composable () -> Unit,
     showFloatingActionButton: Boolean,
+    snackbarHostState: SnackbarHostState,
+    navigationBar: @Composable () -> Unit,
     onFabClicked: () -> Unit,
     content: @Composable (PaddingValues) -> Unit,
 ) {
@@ -33,6 +36,7 @@ fun LibraryScreenScaffold(
 
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             DefaultTopAppBar(titleText = "Library")
         },

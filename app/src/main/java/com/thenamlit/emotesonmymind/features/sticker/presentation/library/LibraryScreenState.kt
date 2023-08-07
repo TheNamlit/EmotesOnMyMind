@@ -1,10 +1,13 @@
 package com.thenamlit.emotesonmymind.features.sticker.presentation.library
 
+import androidx.compose.material3.SnackbarHostState
 import com.thenamlit.emotesonmymind.core.domain.models.Sticker
 import com.thenamlit.emotesonmymind.core.domain.models.StickerCollection
 
 
 data class LibraryScreenState(
+    val snackbarHostState: SnackbarHostState = SnackbarHostState(),
+
     val stickerCollections: List<StickerCollection> = emptyList(),
     val animatedStickerCollections: List<StickerCollection> = emptyList(),
     val notAnimatedStickerCollections: List<StickerCollection> = emptyList(),

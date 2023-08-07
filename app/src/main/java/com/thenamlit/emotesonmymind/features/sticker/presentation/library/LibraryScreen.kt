@@ -53,6 +53,7 @@ fun LibraryScreen(
 
     LibraryScreenScaffold(
         showFloatingActionButton = state.selectedTabCollections,
+        snackbarHostState = state.snackbarHostState,
         onFabClicked = {
             viewModel.setShowCreateCollectionAlertDialog(showAlertDialog = true)
         },

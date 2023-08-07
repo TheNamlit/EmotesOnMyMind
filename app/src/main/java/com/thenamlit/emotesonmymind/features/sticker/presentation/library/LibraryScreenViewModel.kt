@@ -6,9 +6,11 @@ import androidx.lifecycle.viewModelScope
 import coil.ImageLoader
 import com.thenamlit.emotesonmymind.core.domain.models.Sticker
 import com.thenamlit.emotesonmymind.core.domain.models.StickerCollection
+import com.thenamlit.emotesonmymind.core.presentation.util.ErrorEvent
 import com.thenamlit.emotesonmymind.core.presentation.util.NavigationEvent
 import com.thenamlit.emotesonmymind.core.util.Logging
 import com.thenamlit.emotesonmymind.core.util.Resource
+import com.thenamlit.emotesonmymind.core.util.UiText
 import com.thenamlit.emotesonmymind.features.destinations.StickerCollectionDetailsScreenDestination
 import com.thenamlit.emotesonmymind.features.destinations.StickerDetailsScreenDestination
 import com.thenamlit.emotesonmymind.features.sticker.domain.use_case.GetStickerUseCase
@@ -161,6 +163,28 @@ class LibraryScreenViewModel @Inject constructor(
             && _libraryScreenStateFlow.value.selectedTabIndex == 1
         ) {
             selectCollectionsTab()
+        }
+    }
+
+    private fun emitSingleError(uiText: UiText) {
+        Log.d(tag, "emitSingleError | uiText: $uiText")
+
+        viewModelScope.launch(Dispatchers.IO) {
+            _libraryScreenEventFlow.emit(
+                value = LibraryScreenEvent.Error(
+                    errorEvent = ErrorEvent.SingleError(
+                        text = uiText
+                    )
+                )
+            )
+        }
+    }
+
+    fun showSnackbar(text: String) {
+        Log.d(tag, "showSnackbar | text: $text")
+
+        viewModelScope.launch {
+            _libraryScreenStateFlow.value.snackbarHostState.showSnackbar(message = text)
         }
     }
 
